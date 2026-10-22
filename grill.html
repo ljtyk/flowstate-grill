@@ -180,6 +180,8 @@ button:focus-visible, input:focus-visible + .card, input:focus-visible + .switch
 .how { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; font-size: 12.5px; line-height: 1.45; }
 .how li { display: grid; grid-template-columns: 22px 1fr; gap: 6px; }
 .how li span { color: var(--brass); font-weight: 600; }
+.how .moves { margin: 0; }
+.how .moves b { color: var(--fg); font-weight: 600; }
 .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .modes input, .opt input { position: absolute; opacity: 0; pointer-events: none; }
 .card { display: flex; flex-direction: column; gap: 3px; padding: 11px 11px 10px; border: 1px solid var(--steel); border-radius: 12px; cursor: pointer; background: var(--iron); height: 100%; box-sizing: border-box; }
@@ -266,7 +268,7 @@ button:focus-visible, input:focus-visible + .card, input:focus-visible + .switch
       <li><span>1</span>Tap an ingredient to drop it on the grill.</li>
       <li><span>2</span>When the ring closes, tap it on the beat to flip. Tap again when it closes to plate.</li>
       <li><span>3</span>A crackle sounds one beat before it's ready. Headphones help.</li>
-      <li><span>★</span>Every item has its own move. <b>Burger:</b> press on the beat after it lands, hold one beat, release to smash. <b>Steak:</b> after the flip, pull at the ticket's temp. <b>Veg:</b> turn it four times. <b>Chicken:</b> tap on the off-beat while it cooks to baste for a bigger tip.</li>
+      <li><span>★</span><p class="moves">Every item has its own move. <b>Burger:</b> press on the beat after it lands, hold one beat, release to smash. <b>Steak:</b> after the flip, pull at the ticket's temp. <b>Veg:</b> turn it four times. <b>Chicken:</b> tap on the off-beat while it cooks to baste for a bigger tip.</p></li>
       <li><span>4</span>A plate waits on its ticket until the whole ticket is up, and it cools while it waits. Fire the slow items first so everything lands together. Plate something no ticket wants and it's binned at food cost.</li>
       <li><span>5</span>Nothing ends the service early. Burn something, tap to toss it, fire another.</li>
     </ol>
