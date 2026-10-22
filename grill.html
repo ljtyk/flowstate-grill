@@ -1,0 +1,1603 @@
+<title>Flowstate Grill</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;800&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  /* Layout: one-screen line station. Ticket rail on top, grill fills the middle, ingredient bins at hand height. */
+  --iron: #131518;
+  --iron-2: #1c1f23;
+  --iron-3: #262a30;
+  --steel: #454c55;
+  --steel-hi: #828a95;
+  --fg: #ebe5d8;
+  --muted: #8f959d;
+  --ember: #ff7b35;
+  --brass: #e5ae4f;
+  --paper: #f2ebd7;
+  --paper-2: #e6dcc2;
+  --ink: #2a241f;
+  --good: #93d69a;
+  --bad: #ff5d4b;
+  --f-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; margin: 0; }
+[hidden] { display: none !important; }
+body {
+  background: var(--iron);
+  color: var(--fg);
+  font-family: var(--f-mono);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible + .card, input:focus-visible + .switch { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+#app {
+  height: 100%;
+  box-sizing: border-box;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-inline: 16px;
+  padding-block: 10px 12px;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 10px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* header */
+.bar { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.brand { font-family: var(--f-display); font-weight: 800; font-size: 20px; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.brand b { color: var(--ember); font-weight: 800; }
+.service { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.svc-track { flex: 1; height: 6px; border-radius: 3px; background: var(--iron-3); overflow: hidden; position: relative; }
+.svc-fill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, var(--brass), var(--ember)); border-radius: 3px; }
+.svc-clock { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); min-width: 5.2em; text-align: right; }
+.stats { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.stats b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+.beat { width: 9px; height: 9px; border-radius: 50%; background: var(--ember); opacity: .2; }
+.run b { color: var(--brass); }
+.icon-btn { background: var(--iron-2); border: 1px solid var(--steel); border-radius: 8px; height: 30px; min-width: 34px; padding: 0 8px; cursor: pointer; font-size: 12px; color: var(--fg); }
+.icon-btn:hover { border-color: var(--steel-hi); }
+
+/* ticket rail */
+.rail { display: flex; gap: 10px; height: 128px; position: relative; min-width: 0; }
+.rail::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; border-radius: 3px; background: linear-gradient(180deg, var(--steel-hi), var(--steel)); }
+.lbl { font-family: var(--f-display); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.tickets { flex: 1; min-width: 0; display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; align-items: flex-start; padding-top: 2px; scrollbar-width: none; }
+.tickets::-webkit-scrollbar { display: none; }
+.empty-rail { padding-top: 40px; font-size: 12px; color: var(--muted); }
+.ticket {
+  flex: none; width: 116px; box-sizing: border-box;
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  color: var(--ink); font-size: 11.5px; line-height: 1.35;
+  padding: 10px 9px 9px; border-radius: 1px 1px 3px 3px;
+  box-shadow: 0 6px 14px rgba(0,0,0,.45);
+  transform-origin: 50% 0;
+  animation: print .45s cubic-bezier(.2,.9,.3,1.2) both;
+  position: relative;
+  transition: transform .3s, opacity .3s, margin .3s, width .3s, padding .3s;
+}
+.ticket:nth-child(odd) { rotate: -0.7deg; }
+.ticket:nth-child(even) { rotate: 0.6deg; }
+.ticket::before { content: ""; position: absolute; top: -4px; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--steel-hi); box-shadow: inset 0 -2px 0 var(--steel); }
+.t-head { display: flex; justify-content: space-between; font-weight: 600; border-bottom: 1px dashed rgba(42,36,31,.35); padding-bottom: 4px; margin-bottom: 4px; }
+.ticket ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.ticket li { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.ticket li .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.ticket li .mk { margin-left: auto; font-weight: 600; }
+.ticket li.done .nm { text-decoration: line-through; opacity: .5; }
+.ticket li.perfect .mk { color: #b8741a; }
+.ticket li.good .mk { color: #3f7d45; }
+.ticket li.early .mk, .ticket li.late .mk { color: #a2402f; }
+.t-tip { margin-top: 6px; padding: 3px 0 0; border-top: 1px dashed rgba(42,36,31,.35); font-weight: 600; color: #8a5a12; white-space: pre; animation: print .3s ease-out both; }
+.till b { color: var(--brass); font-size: 13px; }
+.take { display: flex; flex-direction: column; gap: 4px; }
+.take strong { font-family: var(--f-display); font-weight: 800; font-size: 56px; line-height: 1; color: var(--brass); font-variant-numeric: tabular-nums; }
+.take-parts { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.take-best { font-size: 12px; color: var(--muted); }
+.take-best.new-best { align-self: flex-start; margin-top: 4px; padding: 3px 8px; border-radius: 6px; background: var(--ember); color: var(--iron); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.ticket li .mk::after { font-size: 9px; }
+.ticket .temp { font-weight: 600; font-size: 0.85em; padding: 0 3px; border-radius: 2px; background: var(--ink); color: var(--paper); }
+.ticket li.wrong .mk { color: #a2402f; font-size: 0.85em; }
+.pips b { font-size: 9px; line-height: 4px; color: var(--steel-hi); margin-left: 2px; font-weight: 600; }
+.ticket li.cooling .mk::after { content: " ~"; color: #5d7a99; }
+.ticket li.cold .mk::after { content: " cold"; color: #4a6b8f; font-weight: 400; }
+.t-age { height: 3px; margin-top: 6px; background: rgba(42,36,31,.12); border-radius: 2px; overflow: hidden; }
+.t-age i { display: block; height: 100%; width: 0; background: var(--ink); }
+.ticket.late-ticket .t-age i { background: #c4502a; }
+.ticket.out { transform: translateY(70px) rotate(4deg); opacity: 0; width: 0; padding-inline: 0; margin-right: -8px; }
+@keyframes print { from { transform: translateY(-40px) scaleY(.2); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* grill */
+.grill-wrap {
+  position: relative; min-height: 0; border-radius: 16px; overflow: hidden;
+  border: 1px solid var(--steel);
+  background: radial-gradient(120% 90% at 50% 60%, #2a1a12 0%, #17120f 55%, #0e0d0d 100%);
+  box-shadow: inset 0 0 0 6px #0b0b0c, inset 0 0 40px rgba(0,0,0,.8);
+}
+#grill { display: block; width: 100%; height: 100%; touch-action: none; cursor: pointer; }
+
+/* bins */
+.bins { display: flex; gap: 8px; justify-content: center; }
+.bin {
+  flex: 1 1 0; max-width: 150px; min-width: 0; position: relative;
+  background: var(--iron-2); border: 1px solid var(--steel); border-radius: 12px;
+  padding: 6px 4px 7px; cursor: pointer; touch-action: manipulation;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  transition: transform .08s, border-color .2s, background .2s;
+}
+.bin:hover { border-color: var(--steel-hi); }
+.bin:active, .bin.hit { transform: scale(.95); background: var(--iron-3); }
+.bin canvas { width: 44px; height: 44px; }
+.bin .nm { font-family: var(--f-display); font-weight: 600; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.pips { display: flex; gap: 2px; }
+.pips i { width: 4px; height: 4px; border-radius: 50%; background: var(--steel-hi); opacity: .7; }
+.key { position: absolute; top: 5px; left: 7px; font-size: 10px; color: var(--muted); }
+.badge { position: absolute; top: -7px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 10px; background: var(--brass); color: var(--ink); font-size: 11px; font-weight: 600; display: grid; place-items: center; }
+.bin.new { animation: unlock 1.6s ease-out 2; }
+.bin.shake { animation: shake .3s; }
+@keyframes unlock { 0%, 100% { box-shadow: 0 0 0 0 rgba(229,174,79,0); } 30% { box-shadow: 0 0 0 6px rgba(229,174,79,.35); border-color: var(--brass); } }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+.coach {
+  position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 2;
+  max-width: calc(100% - 24px); box-sizing: border-box; width: max-content;
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  background: rgba(19,21,24,.9); border: 1px solid var(--steel); border-radius: 10px;
+  font-size: 12.5px; line-height: 1.4; color: var(--fg); animation: print .3s ease-out both;
+}
+.coach.warn { border-color: var(--bad); }
+.coach-skip { flex: none; background: transparent; border: 1px solid var(--steel); border-radius: 6px; padding: 3px 8px; font-size: 11px; color: var(--muted); cursor: pointer; }
+.bin.teach { border-color: var(--brass); box-shadow: 0 0 0 3px rgba(229,174,79,.3); }
+.lesson-head { display: flex; align-items: center; gap: 14px; }
+.lesson-head canvas { width: 72px; height: 72px; flex: none; }
+.lesson-steps { margin: 0; font-size: 14px; line-height: 1.55; }
+.note p { margin: 4px 0 0; font-size: 13px; line-height: 1.5; }
+.linkish { background: none; border: 0; padding: 0; color: var(--brass); text-decoration: underline; cursor: pointer; font-size: 11px; }
+#fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+
+.toast {
+  position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%); z-index: 6; pointer-events: none;
+  font-family: var(--f-display); font-weight: 800; font-size: clamp(26px, 6vw, 44px); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--brass); text-shadow: 0 2px 20px rgba(0,0,0,.9); opacity: 0; white-space: nowrap;
+}
+.toast.show { animation: toast 1.8s ease-out both; }
+@keyframes toast { 0% { opacity: 0; transform: translate(-50%, -30%); } 15%, 70% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; transform: translate(-50%, -60%); } }
+
+/* overlays */
+.overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; background: rgba(10,11,13,.78); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); overflow: auto; }
+.panel { width: 100%; max-width: 560px; box-sizing: border-box; background: var(--iron-2); border: 1px solid var(--steel); border-radius: 18px; padding: 26px 24px 22px; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+.panel h1 { margin: 0; font-family: var(--f-display); font-weight: 800; font-size: clamp(44px, 11vw, 64px); line-height: .9; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; }
+.panel h1 span { color: var(--ember); }
+.panel h2 { margin: 0; font-family: var(--f-display); font-weight: 800; font-size: 36px; text-transform: uppercase; letter-spacing: .02em; }
+.lede { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.how { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; font-size: 12.5px; line-height: 1.45; }
+.how li { display: grid; grid-template-columns: 22px 1fr; gap: 6px; }
+.how li span { color: var(--brass); font-weight: 600; }
+.modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.modes input, .opt input { position: absolute; opacity: 0; pointer-events: none; }
+.card { display: flex; flex-direction: column; gap: 3px; padding: 11px 11px 10px; border: 1px solid var(--steel); border-radius: 12px; cursor: pointer; background: var(--iron); height: 100%; box-sizing: border-box; }
+.card strong { font-family: var(--f-display); font-weight: 800; font-size: 20px; text-transform: uppercase; letter-spacing: .03em; }
+.card em { font-style: normal; font-size: 11px; color: var(--brass); font-variant-numeric: tabular-nums; }
+.card small { font-size: 11px; color: var(--muted); line-height: 1.35; }
+.modes input:checked + .card { border-color: var(--ember); background: #2a1b14; }
+.opts { display: grid; gap: 12px; }
+.opt { display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 12.5px; }
+.opt small { display: block; color: var(--muted); font-size: 11px; }
+.switch { flex: none; width: 40px; height: 22px; border-radius: 11px; background: var(--iron-3); border: 1px solid var(--steel); position: relative; transition: background .2s; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--steel-hi); transition: transform .2s, background .2s; }
+.opt input:checked + .switch { background: #3a2416; border-color: var(--ember); }
+.opt input:checked + .switch::after { transform: translateX(18px); background: var(--ember); }
+.go { border: 0; border-radius: 12px; padding: 14px; cursor: pointer; background: var(--ember); color: var(--iron); font-family: var(--f-display); font-weight: 800; font-size: 24px; letter-spacing: .06em; text-transform: uppercase; }
+.go:hover { filter: brightness(1.08); }
+.ghost { border: 1px solid var(--steel); border-radius: 12px; padding: 12px; cursor: pointer; background: transparent; color: var(--fg); font-family: var(--f-display); font-weight: 600; font-size: 18px; letter-spacing: .05em; text-transform: uppercase; }
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; }
+.fine { margin: 0; font-size: 11px; color: var(--muted); text-align: center; }
+.statgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 10px; margin: 0; }
+.statgrid div { display: flex; flex-direction: column; gap: 2px; }
+.statgrid dt { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.statgrid dd { margin: 0; font-family: var(--f-display); font-weight: 800; font-size: 30px; font-variant-numeric: tabular-nums; }
+.pocket { padding: 12px 14px; border-radius: 12px; background: #2a1b14; border: 1px solid #5a3420; font-size: 12.5px; line-height: 1.45; }
+.pocket b { font-family: var(--f-display); font-size: 22px; color: var(--brass); margin-right: 4px; }
+.trace-wrap { display: flex; flex-direction: column; gap: 6px; }
+#trace { width: 100%; height: 120px; display: block; }
+.legend { display: flex; gap: 14px; font-size: 11px; color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+
+@media (max-width: 560px) {
+  .brand { display: none; }
+  .stats .covers-lbl { display: none; }
+  .rail { height: 118px; }
+  .ticket { width: 102px; font-size: 10.5px; }
+  .bin .nm { font-size: 12px; }
+  .bin canvas { width: 36px; height: 36px; }
+  .key { display: none; }
+  .modes { grid-template-columns: 1fr; }
+  .statgrid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticket, .bin.new, .toast.show { animation-duration: .01s; }
+}
+</style>
+
+<div id="app">
+  <header class="bar">
+    <div class="brand">Flowstate <b>Grill</b></div>
+    <div class="service">
+      <div class="svc-track"><div class="svc-fill" id="svcFill"></div></div>
+      <span class="svc-clock" id="svcClock">5:00</span>
+    </div>
+    <div class="stats">
+      <span class="beat" id="beatLight" aria-hidden="true"></span>
+      <span class="till"><b id="tillEl">$0.00</b></span>
+      <span class="run">run <b id="streakEl">0</b></span>
+      <button class="icon-btn" id="muteBtn" type="button" aria-label="Mute sound">Sound</button>
+      <button class="icon-btn" id="pauseBtn" type="button" aria-label="Pause">Pause</button>
+    </div>
+  </header>
+
+  <section class="rail" aria-label="Ticket rail">
+    <div class="tickets" id="tickets"><div class="empty-rail">Tickets print here.</div></div>
+  </section>
+
+  <main class="grill-wrap">
+    <canvas id="grill" aria-label="Grill"></canvas>
+    <div class="coach" id="coach" role="status" hidden><span id="coachText"></span><button type="button" class="coach-skip" id="coachSkip" hidden>Skip practice</button></div>
+  </main>
+
+  <nav class="bins" id="bins" aria-label="Ingredients"></nav>
+</div>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="toast" id="toast"></div>
+
+<div class="overlay" id="startScreen">
+  <div class="panel">
+    <h1>Flowstate <span>Grill</span></h1>
+    <p class="lede">One grill and a rail of tickets. Everything cooks to the beat, so after a few minutes you stop reading and start feeling it.</p>
+    <ol class="how">
+      <li><span>1</span>Tap an ingredient to drop it on the grill.</li>
+      <li><span>2</span>When the ring closes, tap it on the beat to flip. Tap again when it closes to plate.</li>
+      <li><span>3</span>A crackle sounds one beat before it's ready. Headphones help.</li>
+      <li><span>★</span>Every item has its own move. <b>Burger:</b> press on the beat after it lands, hold one beat, release to smash. <b>Steak:</b> after the flip, pull at the ticket's temp. <b>Veg:</b> turn it four times. <b>Chicken:</b> tap on the off-beat while it cooks to baste for a bigger tip.</li>
+      <li><span>4</span>A plate waits on its ticket until the whole ticket is up, and it cools while it waits. Fire the slow items first so everything lands together. Plate something no ticket wants and it's binned at food cost.</li>
+      <li><span>5</span>Nothing ends the service early. Burn something, tap to toss it, fire another.</li>
+    </ol>
+    <div class="modes" role="radiogroup" aria-label="Heat">
+      <label><input type="radio" name="mode" id="mode-low" value="low"><span class="card"><strong>Low heat</strong><em>66 bpm<span id="best-low"></span></em><small>Slow Sunday lunch. Room to breathe.</small></span></label>
+      <label><input type="radio" name="mode" id="mode-rush" value="rush"><span class="card"><strong>Dinner rush</strong><em>88 bpm<span id="best-rush"></span></em><small>A full Friday. Builds to a real push.</small></span></label>
+      <label><input type="radio" name="mode" id="mode-slam" value="slam"><span class="card"><strong>Slammed</strong><em>104 bpm<span id="best-slam"></span></em><small>Every table seats at once.</small></span></label>
+    </div>
+    <div class="opts">
+      <label class="opt"><input type="checkbox" id="ringsToggle"><span class="switch"></span><span>Cook rings<small>Turn off to cook by ear and by colour. Tips +15%.</small></span></label>
+      <label class="opt"><input type="checkbox" id="countsToggle"><span class="switch"></span><span>Order counts on bins<small>Turn off to read every ticket yourself. Tips +10%.</small></span></label>
+      <label class="opt"><input type="checkbox" id="swipeToggle"><span class="switch"></span><span>Swipe up to plate<small>Tap still flips. Timing counts from touch-down.</small></span></label>
+    </div>
+    <button class="go" id="startBtn" type="button">Fire service</button>
+    <p class="fine">5-minute service. Mouse, touch, or keys 1–5 for the bins. <button type="button" class="linkish" id="replayIntros">Replay item intros</button></p>
+  </div>
+</div>
+
+<div class="overlay" id="lessonScreen" hidden>
+  <div class="panel lesson">
+    <div class="lesson-head">
+      <canvas id="lessonIcon" width="120" height="120" aria-hidden="true"></canvas>
+      <div><span class="lbl">New on the grill</span><h2 id="lessonTitle"></h2></div>
+    </div>
+    <p class="lesson-steps" id="lessonSteps"></p>
+    <p class="lede" id="lessonTip"></p>
+    <p class="fine" id="lessonNeed"></p>
+    <div class="row">
+      <button class="go" id="lessonGo" type="button">Try it</button>
+      <button class="ghost" id="lessonSkip" type="button">Skip</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="pauseScreen" hidden>
+  <div class="panel">
+    <h2>Paused</h2>
+    <p class="lede">The grill is holding. Nothing burns while you're away.</p>
+    <div class="row">
+      <button class="go" id="resumeBtn" type="button">Back on the line</button>
+      <button class="ghost" id="quitBtn" type="button">End service</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="endScreen" hidden>
+  <div class="panel">
+    <h2>Service done</h2>
+    <div class="take">
+      <span class="lbl">Tonight's take</span>
+      <strong id="takeAmt">$0.00</strong>
+      <span class="take-parts" id="takeParts"></span>
+      <span class="take-best" id="takeBest"></span>
+    </div>
+    <div class="pocket" id="pocketLine"></div>
+    <div class="note"><span class="lbl">Chef's note</span><p id="chefNote"></p></div>
+    <dl class="statgrid" id="endStats"></dl>
+    <div class="trace-wrap">
+      <span class="lbl">How the service went</span>
+      <canvas id="trace"></canvas>
+      <div class="legend"><span><i style="background:var(--ember)"></i>Pressure</span><span><i style="background:var(--good)"></i>Timing</span></div>
+    </div>
+    <div class="row">
+      <button class="go" id="againBtn" type="button">Fire again</button>
+      <button class="ghost" id="menuBtn" type="button">Change heat</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const ease = k => k * k * (3 - 2 * k);
+const mix = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
+const rgb = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+const fmt = s => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- menu ---------- */
+const TYPES = {
+  patty:   { name: 'Burger',    abbr: 'BRGR',     beats: 4, price: 14, raw: [196, 98, 104], done: [118, 66, 42] },
+  veg:     { name: 'Veg skewer', abbr: 'VEG SKWR', beats: 2, sides: 4, price: 11, unlockMsg: 'Veg · turn it four times', raw: [200, 200, 200], done: [120, 110, 90] },
+  shrimp:  { name: 'Shrimp',    abbr: 'SHRMP',    beats: 2, price: 16, raw: [158, 168, 176], done: [242, 132, 92] },
+  steak:   { name: 'Steak',     abbr: 'STRIP',    beats: 4, price: 29, raw: [172, 46, 58],  done: [108, 50, 36], unlockMsg: 'Steak · cook to temp' },
+  chicken: { name: 'Chicken',   abbr: 'CHX THGH', beats: 8, price: 18, unlockMsg: 'Chicken · baste off-beat', raw: [234, 192, 182], done: [212, 148, 70] },
+};
+// Cook times sit on a 2-beat grid: shrimp is 1 unit, a burger 2 shrimp, a chicken 2 burgers.
+// First time a player meets an item, the service holds for a short practice. After that, a one-line reminder.
+const LESSONS = {
+  shrimp:  { title: 'Shrimp · the basics', need: 2,
+    steps: 'Tap the shrimp bin to drop one on the grill. When the ring closes, tap it on the beat to flip. When it closes again, tap to plate.',
+    tip: 'A crackle plays one beat before it’s ready. Shrimp is the shortest item: 2 beats a side.',
+    hint: 'Shrimp · 2 beats a side, flip then plate' },
+  patty:   { title: 'Burger · smash', need: 2,
+    steps: 'On the beat right after the patty lands, press and hold. Let go one beat later. Then flip and plate on the beat as usual.',
+    tip: 'The white circle closes on the beat to press. A burger is two shrimp: 4 beats a side.',
+    hint: 'Burger · press the beat after it lands, hold one beat, let go' },
+  steak:   { title: 'Steak · cook to temp', need: 1,
+    steps: 'Sear the first side for 4 beats and flip. Then pull it at the ticket’s temp: rare after 2 beats, med after 4, well after 6.',
+    tip: 'This practice steak is MED. You’ll hear a crackle before each temp.',
+    hint: 'Steak · after the flip: rare 2, med 4, well 6 beats' },
+  veg:     { title: 'Veg · four sides', need: 1,
+    steps: 'A skewer has four sides. Each time the ring closes, tap to turn it: turn, turn, turn, then plate.',
+    tip: 'Two beats a side, so it keeps a steady pulse.',
+    hint: 'Veg · turn, turn, turn, plate, every 2 beats' },
+  chicken: { title: 'Chicken · baste', need: 1,
+    steps: 'While it cooks, tap it on the off-beat (halfway between beats) to baste. Flip and plate on the beat as usual.',
+    tip: 'Basting is a bonus. Baste at least twice here. A full glaze adds about a quarter to the tip.',
+    hint: 'Chicken · tap on the off-beat to baste for glaze' },
+};
+const LESSON_ORDER = ['shrimp', 'patty', 'steak', 'veg', 'chicken'];
+function loadLearned() { try { return new Set(JSON.parse(localStorage.getItem('fsg-learned') || '[]')); } catch (e) { return new Set(); } }
+function saveLearned(set) { try { localStorage.setItem('fsg-learned', JSON.stringify([...set])); } catch (e) {} }
+const ORDER = ['patty', 'shrimp', 'steak', 'veg', 'chicken'];
+const UNLOCK = { patty: 0, shrimp: 0, steak: 0.08, veg: 0.22, chicken: 0.4 };
+const CHAR = [34, 24, 20];
+const VEGC = [
+  { raw: [212, 54, 44], done: [150, 42, 28] },
+  { raw: [98, 152, 72], done: [74, 98, 42] },
+  { raw: [234, 224, 202], done: [198, 150, 92] },
+  { raw: [238, 190, 50], done: [190, 122, 32] },
+];
+const FAT = { raw: [242, 228, 212], done: [222, 172, 104] };
+const MODES = {
+  low:  { bpm: 66,  cap: 0.55, len: 300, gap: 4 },
+  rush: { bpm: 88,  cap: 1.0,  len: 300, gap: 2 },
+  slam: { bpm: 104, cap: 1.25, len: 300, gap: 2 },
+};
+const CHAR_BEATS = 3;
+const SCALE = [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24];   // A minor pentatonic, two octaves
+const BASS = [55, 55, 82.41, 73.42, 55, 65.41, 73.42, 82.41];
+const MARKS = { perfect: '★', good: '✓', early: 'under', late: 'over', wrong: 'temp' };
+// Each item has one signature move. Veg has four sides to turn through. Steak sears for a fixed side,
+// then the second side is pulled at the temp the ticket calls.
+const TEMPS = { RARE: 2, MED: 4, WELL: 6 };   // beats on the steak's second side
+const TEMP_ORDER = ['RARE', 'MED', 'WELL'];
+function sidesOfType(type) { return TYPES[type].sides || 2; }
+function totalBeats(type) { return type === 'steak' ? TYPES.steak.beats + TEMPS.MED : TYPES[type].beats * sidesOfType(type); }
+function sideBeats(type, side, temp) { return type === 'steak' && side === 1 ? TEMPS[temp || 'MED'] : TYPES[type].beats; }
+
+let settings = { mode: 'rush', rings: true, counts: true, swipe: false };
+try { const s = JSON.parse(localStorage.getItem('fsg-settings') || 'null'); if (s) Object.assign(settings, s); } catch (e) {}
+const MODE_NAMES = { low: 'Low heat', rush: 'Dinner rush', slam: 'Slammed' };
+function loadBest() { try { return JSON.parse(localStorage.getItem('fsg-best') || '{}') || {}; } catch (e) { return {}; } }
+function saveBest(b) { try { localStorage.setItem('fsg-best', JSON.stringify(b)); } catch (e) {} }
+function renderBest() {
+  const b = loadBest();
+  for (const k of Object.keys(MODE_NAMES)) { const el = document.getElementById('best-' + k); if (el) el.textContent = b[k] ? ' · best ' + money(b[k]) : ''; }
+}
+function saveSettings() { try { localStorage.setItem('fsg-settings', JSON.stringify(settings)); } catch (e) {} }
+
+/* ---------- audio ---------- */
+let actx = null, master = null, noiseBuf = null, sizzleGain = null, muted = false;
+function initAudio() {
+  if (actx) return;
+  try {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    master = actx.createGain(); master.gain.value = 0.9;
+    const comp = actx.createDynamicsCompressor();
+    master.connect(comp); comp.connect(actx.destination);
+    noiseBuf = actx.createBuffer(1, actx.sampleRate * 2, actx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = actx.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
+    const bp = actx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 5200; bp.Q.value = 0.6;
+    const hp = actx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2400;
+    sizzleGain = actx.createGain(); sizzleGain.gain.value = 0;
+    src.connect(bp); bp.connect(hp); hp.connect(sizzleGain); sizzleGain.connect(master); src.start();
+  } catch (e) { actx = null; }
+}
+function out(node, pan) {
+  if (pan && actx.createStereoPanner) { const p = actx.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); node.connect(p); p.connect(master); }
+  else node.connect(master);
+}
+function env(g, when, peak, attack, decay) {
+  g.gain.setValueAtTime(0.0001, when);
+  g.gain.exponentialRampToValueAtTime(peak, when + attack);
+  g.gain.exponentialRampToValueAtTime(0.0001, when + attack + decay);
+}
+function noiseHit(when, o) {
+  const { type = 'bandpass', freq = 2000, q = 1, peak = 0.1, attack = 0.002, decay = 0.05, pan = 0 } = o;
+  const s = actx.createBufferSource(); s.buffer = noiseBuf;
+  const f = actx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+  const g = actx.createGain(); env(g, when, peak, attack, decay);
+  s.connect(f); f.connect(g); out(g, pan);
+  s.start(when, Math.random() * 1.5); s.stop(when + attack + decay + 0.05);
+}
+function tone(when, o) {
+  const { freq = 440, type = 'sine', peak = 0.1, attack = 0.005, decay = 0.3, sweepTo = 0, pan = 0 } = o;
+  const osc = actx.createOscillator(); osc.type = type; osc.frequency.setValueAtTime(freq, when);
+  if (sweepTo) osc.frequency.exponentialRampToValueAtTime(sweepTo, when + decay * 0.6);
+  const g = actx.createGain(); env(g, when, peak, attack, decay);
+  osc.connect(g); out(g, pan); osc.start(when); osc.stop(when + attack + decay + 0.05);
+}
+const SFX = {
+  chop(w, accent) { noiseHit(w, { freq: accent ? 3400 : 2600, q: 1.2, peak: accent ? 0.1 : 0.055, decay: 0.035 }); tone(w, { freq: accent ? 250 : 190, sweepTo: 90, peak: accent ? 0.12 : 0.06, decay: 0.06 }); },
+  kick(w) { tone(w, { freq: 120, sweepTo: 42, peak: 0.4, decay: 0.28 }); },
+  hat(w) { noiseHit(w, { type: 'highpass', freq: 7500, q: 0.5, peak: 0.03, decay: 0.03 }); },
+  bass(w, f, d) { tone(w, { freq: f, type: 'triangle', peak: 0.14, attack: 0.01, decay: d }); },
+  note(f, pan) { const w = actx.currentTime; tone(w, { freq: f, type: 'triangle', peak: 0.11, decay: 0.8, pan }); tone(w, { freq: f * 2, peak: 0.035, decay: 0.4, pan }); },
+  tick(pan) { const w = actx.currentTime; tone(w, { freq: 660, type: 'sine', peak: 0.04, decay: 0.08, pan }); },
+  ding() { const w = actx.currentTime; tone(w, { freq: 1760, peak: 0.08, decay: 1.4 }); tone(w, { freq: 2637, peak: 0.035, decay: 0.9 }); tone(w + 0.09, { freq: 2217, peak: 0.05, decay: 1.2 }); },
+  printer() { const w = actx.currentTime; for (let i = 0; i < 10; i++) noiseHit(w + i * 0.026, { freq: 3000 + Math.random() * 900, q: 3, peak: 0.03, decay: 0.016 }); },
+  place(pan) { const w = actx.currentTime; noiseHit(w, { type: 'highpass', freq: 3000, peak: 0.15, attack: 0.005, decay: 0.55, pan }); tone(w, { freq: 140, sweepTo: 70, peak: 0.1, decay: 0.08, pan }); },
+  flip(pan) { const w = actx.currentTime; tone(w, { freq: 210, sweepTo: 80, peak: 0.13, decay: 0.07, pan }); noiseHit(w + 0.05, { type: 'highpass', freq: 3500, peak: 0.13, decay: 0.45, pan }); },
+  crackle(w, pan) { for (let i = 0; i < 3; i++) noiseHit(w + i * 0.035 + Math.random() * 0.01, { freq: 5200 + Math.random() * 2200, q: 4, peak: 0.06, decay: 0.012, pan }); },
+  smash(pan) { const w = actx.currentTime; tone(w, { freq: 150, sweepTo: 50, peak: 0.3, decay: 0.12, pan }); noiseHit(w, { type: 'lowpass', freq: 1200, peak: 0.12, decay: 0.08, pan }); noiseHit(w + 0.03, { type: 'highpass', freq: 3000, peak: 0.2, decay: 0.7, pan }); },
+  baste(clean, pan) { const w = actx.currentTime; noiseHit(w, { type: 'bandpass', freq: 1800, q: 0.7, peak: 0.07, attack: 0.01, decay: 0.12, pan }); if (clean) tone(w, { freq: 1318.5, peak: 0.035, decay: 0.15, pan }); },
+  nope() { const w = actx.currentTime; tone(w, { freq: 110, type: 'square', peak: 0.025, decay: 0.06 }); },
+  toss() { const w = actx.currentTime; noiseHit(w, { type: 'lowpass', freq: 900, peak: 0.12, attack: 0.02, decay: 0.25 }); },
+};
+function sfx(name, ...a) { if (actx && actx.state === 'running') { try { SFX[name](...a); } catch (e) {} } }
+
+/* ---------- game state ---------- */
+let S = null;
+function rawClock() { return actx ? actx.currentTime : performance.now() / 1000; }
+function now() { return (S.paused && !actx ? S.pauseRaw : rawClock()) - S.t0; }
+function latency() { return actx ? Math.min(0.08, actx.outputLatency || actx.baseLatency || 0) : 0; }
+
+function newGame() {
+  const m = MODES[settings.mode];
+  S = {
+    m, beat: 60 / m.bpm, len: m.len, t0: 0,
+    items: [], slots: new Array(6).fill(null), tickets: [], binned: 0,
+    nextId: 1, ticketNo: 100 + Math.floor(Math.random() * 300),
+    ema: 0.7, streak: 0, maxStreak: 0, covers: 0, plates: 0, actions: 0, perfects: 0, cleans: 0, chars: 0, score: 0,
+    sales: 0, tips: 0, waste: 0, tipPcts: [],
+    svc: 0, lastT: 0, lesson: null, lessonQueue: [], learned: loadLearned(), hints: [],
+    issues: { collide: 0, smash: 0, temp: 0, cold: 0, chickens: 0, glazeless: 0, early: 0, late: 0 },
+    ticketTimes: [], lastSpawn: -99, closed: false, unlocked: new Set(), intensity: 0.3,
+    running: true, paused: false, pauseRaw: 0, trace: [], bucket: { acc: 0, n: 0 }, nextTrace: 5,
+    nextBeatIdx: -4, noteIdx: 0, lastBeatShown: -99,
+  };
+}
+
+function intensityAt(tn) {
+  let v;
+  if (tn < 0.12) v = 0.32;
+  else if (tn < 0.7) v = 0.32 + ease((tn - 0.12) / 0.58) * 0.68;
+  else if (tn < 0.88) v = 1;
+  else v = 1 - clamp((tn - 0.88) / 0.12, 0, 1) * 0.6;
+  return v * S.m.cap;
+}
+
+/* beats: everything is quantized to the same grid as the music */
+function placeStart(t) { let b = Math.ceil(t / S.beat) * S.beat; if (b - t > S.beat * 0.75) b -= S.beat; return b; }
+function roundBeat(t) { return Math.round(t / S.beat) * S.beat; }
+function levelOf(it, t) {
+  const p = (t - it.start) / (it.target - it.start);
+  if (p <= 1) return Math.max(0, p);
+  return 1 + (t - it.target) / (it.charAt - it.target);
+}
+// Sets up the side that is now face down: when it is ready, when it burns, and when the crackle cues play.
+function setSide(it, start) {
+  it.start = start;
+  if (it.type === 'steak' && it.side === 1) {
+    it.ticks = TEMP_ORDER.map(k => ({ temp: k, at: start + TEMPS[k] * S.beat }));
+    it.target = it.ticks.find(k => k.temp === it.temp).at;
+    it.charAt = it.ticks[2].at + CHAR_BEATS * S.beat;
+    it.cues = it.ticks.map(k => k.at - S.beat);
+  } else {
+    it.ticks = null;
+    it.target = start + TYPES[it.type].beats * S.beat;
+    it.charAt = it.target + CHAR_BEATS * S.beat;
+    it.cues = [it.target - S.beat];
+  }
+  // count stacked ready moments, for the end-of-service hint
+  if (S.items.some(o => o !== it && o.state === 'cook' && Math.abs(o.target - it.target) < 0.05)) S.issues.collide++;
+}
+// The oldest steak temp on the rail that no steak on the grill is already heading for.
+function wantedTemp() {
+  const open = [];
+  for (const tk of S.tickets) if (!tk.complete) for (const l of tk.lines) if (l.type === 'steak' && !l.done) open.push(l.temp);
+  for (const o of S.items) if (o.type === 'steak' && o.temp) { const i = open.indexOf(o.temp); if (i >= 0) open.splice(i, 1); }
+  return open[0] || 'MED';
+}
+// Perfect is roughly a quarter beat wide in total (±0.13 s at 96 bpm); good is about a full beat.
+function windows() { return { pw: Math.max(0.12, S.beat * 0.21), gw: Math.max(0.3, S.beat * 0.5) }; }
+function judge(d) {
+  const { pw, gw } = windows();
+  const a = Math.abs(d);
+  return a <= pw ? 'perfect' : a <= gw ? 'good' : d < 0 ? 'early' : 'late';
+}
+
+/* ---------- scheduler (audio clock drives the beat) ---------- */
+function scheduler() {
+  if (!S || !S.running || S.paused) return;
+  const ahead = now() + 0.12;
+  while (S.nextBeatIdx * S.beat < ahead) {
+    const i = S.nextBeatIdx, when = S.t0 + i * S.beat;
+    if (actx && when >= actx.currentTime - 0.02) scheduleBeat(i, when);
+    S.nextBeatIdx++;
+  }
+  if (actx) {
+    for (const it of S.items) {
+      if (it.state !== 'cook') continue;
+      while (it.cues.length && it.cues[0] < ahead) {
+        const c = it.cues.shift();
+        if (S.t0 + c >= actx.currentTime - 0.02) sfx('crackle', S.t0 + c, slotPan(it.slot));
+      }
+    }
+  }
+}
+function scheduleBeat(i, when) {
+  if (i < 0) { sfx('chop', when, true); return; }
+  if (S.closed && S.tickets.length === 0 && S.items.length === 0) return;
+  const pos = i % 4, inten = S.intensity;
+  sfx('chop', when, pos === 0);
+  if (inten >= 0.45 && (pos === 0 || pos === 2)) sfx('kick', when);
+  if (inten >= 0.62) sfx('hat', when + S.beat / 2);
+  if (inten >= 0.85) sfx('bass', when, BASS[(Math.floor(i / 4) % 2) * 4 + pos], S.beat * 0.9);
+}
+setInterval(scheduler, 25);
+
+/* ---------- grill geometry ---------- */
+const grill = $('grill'), gctx = grill.getContext('2d');
+const fx = $('fx'), fctx = fx.getContext('2d');
+const G = { w: 0, h: 0, dpr: 1, slots: [], rad: 40, rect: null, grates: null };
+function layout() {
+  const r = grill.getBoundingClientRect();
+  if (r.width < 2 || r.height < 2) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  G.w = r.width; G.h = r.height; G.dpr = dpr; G.rect = r;
+  grill.width = Math.round(r.width * dpr); grill.height = Math.round(r.height * dpr);
+  const landscape = r.width > r.height * 1.15;
+  const cols = landscape ? 3 : 2, rows = landscape ? 2 : 3;
+  const cw = r.width / cols, ch = r.height / rows;
+  G.rad = Math.min(cw, ch) * 0.37;
+  G.slots = [];
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) G.slots.push({ x: cw * (x + 0.5), y: ch * (y + 0.5), cw, ch });
+  fx.width = Math.round(innerWidth * dpr); fx.height = Math.round(innerHeight * dpr);
+  // grates on a transparent layer, drawn over the ember glow
+  const c = document.createElement('canvas'); c.width = grill.width; c.height = grill.height;
+  const g = c.getContext('2d'); g.scale(dpr, dpr);
+  const gap = Math.max(22, G.rad * 0.42), bw = gap * 0.3;
+  for (let y = gap * 0.5; y < r.height; y += gap) {
+    const gr = g.createLinearGradient(0, y - bw / 2, 0, y + bw / 2);
+    gr.addColorStop(0, '#5d646d'); gr.addColorStop(0.35, '#3a3f46'); gr.addColorStop(1, '#16181b');
+    g.fillStyle = gr; g.fillRect(0, y - bw / 2, r.width, bw);
+  }
+  G.grates = c;
+}
+new ResizeObserver(layout).observe(grill);
+addEventListener('resize', layout);
+function slotPan(i) { const s = G.slots[i]; return s ? (s.x / G.w - 0.5) * 1.2 : 0; }
+function slotPage(i) { const s = G.slots[i]; return { x: G.rect.left + s.x, y: G.rect.top + s.y }; }
+function slotAt(x, y) {
+  for (let i = 0; i < G.slots.length; i++) { const s = G.slots[i]; if (Math.abs(x - s.x) <= s.cw / 2 && Math.abs(y - s.y) <= s.ch / 2) return i; }
+  return -1;
+}
+
+/* ---------- drawing food ---------- */
+function colAt(type, lvl, chunk) {
+  const raw = chunk ? chunk.raw : TYPES[type].raw, done = chunk ? chunk.done : TYPES[type].done;
+  return lvl <= 1 ? mix(raw, done, ease(clamp(lvl, 0, 1))) : mix(done, CHAR, clamp(lvl - 1, 0, 1));
+}
+const SHAPES = {
+  patty: (g, r, s) => g.arc(0, 0, r * 0.8 * s, 0, TAU),
+  steak: (g, r, s) => g.ellipse(0, 0, r * 0.9 * s, r * 0.62 * s, 0, 0, TAU),
+  chicken: (g, r, s) => {
+    const k = r * s;
+    g.moveTo(-0.85 * k, 0);
+    g.bezierCurveTo(-0.7 * k, -0.78 * k, 0.6 * k, -0.82 * k, 0.82 * k, -0.08 * k);
+    g.bezierCurveTo(0.92 * k, 0.52 * k, -0.2 * k, 0.86 * k, -0.85 * k, 0);
+    g.closePath();
+  },
+};
+function drawMarks(g, r, marks) {
+  g.lineCap = 'round';
+  g.lineWidth = r * 0.085;
+  g.strokeStyle = `rgba(26,15,9,${0.75 * marks})`;
+  g.save(); g.rotate(0.7);
+  for (let k = -2; k <= 2; k++) { g.beginPath(); g.moveTo(-r, k * r * 0.34); g.lineTo(r, k * r * 0.34); g.stroke(); }
+  g.restore();
+  if (marks > 0.92) {
+    g.strokeStyle = `rgba(26,15,9,0.32)`;
+    g.save(); g.rotate(-0.7);
+    for (let k = -2; k <= 2; k++) { g.beginPath(); g.moveTo(-r, k * r * 0.34); g.lineTo(r, k * r * 0.34); g.stroke(); }
+    g.restore();
+  }
+}
+function rrect(g, x, y, w, h, rad) { if (g.roundRect) g.roundRect(x, y, w, h, rad); else g.rect(x, y, w, h); }
+function drawFood(g, type, seed, r, topL, rimL, marks) {
+  g.save();
+  if (type === 'shrimp') drawShrimp(g, r, topL, rimL);
+  else if (type === 'veg') drawVeg(g, seed, r, topL, rimL, marks);
+  else {
+    const path = SHAPES[type];
+    g.beginPath(); path(g, r, 1); g.fillStyle = rgb(colAt(type, rimL)); g.fill();
+    g.beginPath(); path(g, r, 0.86); g.fillStyle = rgb(colAt(type, topL)); g.fill();
+    if (type === 'steak') {
+      g.beginPath(); g.ellipse(0, 0, r * 0.8, r * 0.54, 0, -0.95, 0.55);
+      g.lineWidth = r * 0.11; g.lineCap = 'round'; g.strokeStyle = rgb(colAt(type, topL, FAT)); g.stroke();
+    }
+    const R = rng(seed);
+    for (let i = 0; i < 14; i++) {
+      const a = R() * TAU, d = Math.sqrt(R()) * r * 0.55;
+      g.beginPath(); g.arc(Math.cos(a) * d, Math.sin(a) * d * 0.8, r * (0.025 + R() * 0.03), 0, TAU);
+      g.fillStyle = R() < 0.6 ? 'rgba(0,0,0,0.13)' : 'rgba(255,255,255,0.08)'; g.fill();
+    }
+    if (marks > 0) { g.save(); g.beginPath(); path(g, r, 0.86); g.clip(); drawMarks(g, r, marks); g.restore(); }
+    g.beginPath(); path(g, r, 0.86);
+    const hl = g.createRadialGradient(-r * 0.3, -r * 0.35, 0, -r * 0.3, -r * 0.35, r * 0.9);
+    hl.addColorStop(0, 'rgba(255,255,255,0.15)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = hl; g.fill();
+  }
+  g.restore();
+}
+function drawShrimp(g, r, topL, rimL) {
+  const a0 = 0.2 * Math.PI, a1 = 1.5 * Math.PI, R = r * 0.5;
+  g.lineCap = 'round';
+  g.beginPath(); g.arc(0, 0, R, a0, a1); g.strokeStyle = rgb(colAt('shrimp', rimL)); g.lineWidth = r * 0.44; g.stroke();
+  g.beginPath(); g.arc(0, 0, R, a0, a1); g.strokeStyle = rgb(colAt('shrimp', topL)); g.lineWidth = r * 0.3; g.stroke();
+  g.strokeStyle = 'rgba(70,30,20,0.25)'; g.lineWidth = r * 0.03;
+  for (let a = a0 + 0.35; a < a1 - 0.1; a += 0.32) {
+    const c = Math.cos(a), s = Math.sin(a);
+    g.beginPath(); g.moveTo(c * (R - r * 0.16), s * (R - r * 0.16)); g.lineTo(c * (R + r * 0.16), s * (R + r * 0.16)); g.stroke();
+  }
+  const tx = Math.cos(a1) * R, ty = Math.sin(a1) * R;
+  g.fillStyle = rgb(mix(colAt('shrimp', topL), [205, 62, 40], 0.45));
+  g.beginPath(); g.moveTo(tx - r * 0.05, ty); g.lineTo(tx + r * 0.3, ty - r * 0.22); g.lineTo(tx + r * 0.32, ty + r * 0.14); g.closePath(); g.fill();
+}
+function drawVeg(g, seed, r, topL, rimL, marks) {
+  g.lineCap = 'round';
+  g.strokeStyle = rgb(mix([200, 164, 112], [60, 40, 25], clamp((Math.max(topL, rimL) - 0.5) / 1.5, 0, 1)));
+  g.lineWidth = r * 0.08;
+  g.beginPath(); g.moveTo(-r * 0.98, 0); g.lineTo(r * 0.98, 0); g.stroke();
+  const xs = [-0.6, -0.2, 0.2, 0.6];
+  const tops = [];
+  xs.forEach((x, i) => {
+    const c = VEGC[(i + seed) % 4], cx = x * r, h1 = r * 0.2, h2 = r * 0.16;
+    g.beginPath(); rrect(g, cx - h1, -h1, h1 * 2, h1 * 2, r * 0.06); g.fillStyle = rgb(colAt('veg', rimL, c)); g.fill();
+    g.beginPath(); rrect(g, cx - h2, -h2, h2 * 2, h2 * 2, r * 0.05); g.fillStyle = rgb(colAt('veg', topL, c)); g.fill();
+    tops.push([cx - h2, -h2, h2 * 2]);
+  });
+  if (marks > 0) {
+    g.save(); g.beginPath();
+    for (const [x, y, w] of tops) g.rect(x, y, w, w);
+    g.clip(); drawMarks(g, r * 0.6, marks); g.restore();
+  }
+}
+
+/* ---------- fx layer ---------- */
+const parts = [], flights = [], floats = [];
+function puff(x, y, n, kind, size) {
+  if (reduced) n = Math.ceil(n / 4);
+  for (let i = 0; i < n && parts.length < 450; i++) {
+    const a = Math.random() * TAU, sp = kind === 'ember' ? 40 + Math.random() * 90 : 10 + Math.random() * 30;
+    parts.push({ kind, x: x + (Math.random() - 0.5) * size, y: y + (Math.random() - 0.5) * size * 0.5,
+      vx: Math.cos(a) * sp * 0.6, vy: kind === 'ember' ? -Math.abs(Math.sin(a) * sp) - 40 : -25 - Math.random() * 30,
+      life: 0, max: kind === 'ember' ? 0.6 + Math.random() * 0.5 : 1.1 + Math.random() * 1.1, size: size * (0.25 + Math.random() * 0.25) });
+  }
+}
+function floatText(x, y, text, color) { floats.push({ x, y, text, color, t: performance.now() }); }
+function fly(type, seed, r, topL, rimL, marks, from, to, onDone) {
+  flights.push({ type, seed, r, topL, rimL, marks, from, to, t: performance.now(), dur: 420, onDone, rot: Math.random() * TAU });
+}
+
+/* ---------- tickets ---------- */
+const ticketsEl = $('tickets');
+function ticketLoad() { let n = 0; for (const tk of S.tickets) if (!tk.complete) for (const l of tk.lines) if (!l.done) n++; return n; }
+function spawnTicket(t, room) {
+  const pool = ORDER.filter(k => S.unlocked.has(k));
+  const r = Math.random();
+  let size = S.intensity < 0.5 ? (r < 0.6 ? 1 : 2) : (r < 0.25 ? 1 : r < 0.7 ? 2 : 3);
+  size = Math.max(1, Math.min(size, room + 1, 4));
+  const lines = [];
+  while (lines.length < size) {
+    const ty = pool[Math.floor(Math.random() * pool.length)];
+    if (lines.filter(x => x === ty).length >= 2) continue;
+    lines.push(ty);
+  }
+  lines.sort((a, b) => totalBeats(b) - totalBeats(a));
+  const tk = { id: S.nextId++, no: ++S.ticketNo, table: 1 + Math.floor(Math.random() * 24), born: t,
+    lines: lines.map(type => ({ type, done: false, grade: null, el: null,
+      temp: type === 'steak' ? TEMP_ORDER[Math.floor(Math.random() * 3)] : null })),
+    complete: false, el: null,
+    expect: (Math.max(...lines.map(totalBeats)) + 10) * S.beat + lines.length * 2.5 };
+  buildTicket(tk);
+  S.tickets.push(tk);
+  S.lastSpawn = t;
+  sfx('printer');
+}
+function buildTicket(tk) {
+  const empty = ticketsEl.querySelector('.empty-rail'); if (empty) empty.remove();
+  const el = document.createElement('div'); el.className = 'ticket';
+  el.innerHTML = `<div class="t-head"><span>#${tk.no}</span><span>T${tk.table}</span></div><ul></ul><div class="t-age"><i></i></div>`;
+  const ul = el.querySelector('ul');
+  for (const l of tk.lines) {
+    const li = document.createElement('li');
+    li.innerHTML = `<i class="dot" style="background:${rgb(l.type === 'veg' ? VEGC[0].raw : TYPES[l.type].raw)}"></i><span class="nm">${TYPES[l.type].abbr}${l.temp ? ` <b class="temp">${l.temp}</b>` : ''}</span><span class="mk"></span>`;
+    l.el = li; ul.appendChild(li);
+  }
+  tk.el = el; tk.ageEl = el.querySelector('.t-age i');
+  ticketsEl.appendChild(el);
+  ticketsEl.scrollTo({ left: ticketsEl.scrollWidth, behavior: reduced ? 'auto' : 'smooth' });
+}
+function markLine(tk, l, grade, at) {
+  l.done = true; l.grade = grade; l.at = at;
+  l.el.classList.add('done', grade);
+  l.el.querySelector('.mk').textContent = MARKS[grade] + (l.glaze >= 3 ? ' ✦' : '');
+}
+// each clean baste adds a little to that plate's quality, up to +0.24 for a full glaze
+function lineQual(l, t) { return heldQual(l.grade, t - l.at) + (l.glaze || 0) * 0.04; }
+// The tip is the score: clean timing and a fast ticket pay more, and so do the harder options.
+const QUAL = { perfect: 1, good: 0.7, early: 0.3, late: 0.3, wrong: 0.15 };
+// Cooked food cools while it waits on its ticket, so items on one ticket should land together.
+const COOL_RATE = 0.016;   // quality lost per second held; a perfect plate reads "cold" after ~22 s
+function cooled(secs) { return Math.max(0, secs) * COOL_RATE; }
+function heldQual(grade, secs) { return Math.max(0.1, QUAL[grade] - cooled(secs)); }
+function hardBonus() { return 1 + (settings.counts ? 0 : 0.1) + (settings.rings ? 0 : 0.15); }
+function money(v) { return (v < 0 ? '−$' : '$') + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function updateTill() { $('tillEl').textContent = money(S.sales + S.tips - S.waste); }
+function checkTicket(tk, t) {
+  if (tk.complete || tk.lines.some(l => !l.grade)) return;
+  tk.complete = true;
+  S.covers++; S.ticketTimes.push(t - tk.born);
+  const sale = tk.lines.reduce((a, l) => a + TYPES[l.type].price, 0);
+  const q = tk.lines.reduce((a, l) => a + lineQual(l, t), 0) / tk.lines.length;
+  for (const l of tk.lines) {
+    if (cooled(t - l.at) > 0.35) S.issues.cold++;
+    if (l.type === 'chicken') { S.issues.chickens++; if (!l.glaze) S.issues.glazeless++; }
+  }
+  const k = (t - tk.born) / tk.expect;
+  let pct = 0.05 + 0.2 * q;
+  if (k <= 1) pct += 0.05; else if (k > 1.6) pct *= 0.5;
+  pct *= hardBonus();
+  const tip = Math.round(sale * pct * 100) / 100;
+  S.sales += sale; S.tips += tip; S.tipPcts.push(pct);
+  updateTill();
+  const stamp = document.createElement('div');
+  stamp.className = 't-tip'; stamp.textContent = `TIP ${Math.round(pct * 100)}%  ${money(tip)}`;
+  tk.el.appendChild(stamp);
+  const rc = tk.el.getBoundingClientRect();
+  floatText(rc.left + rc.width / 2, rc.bottom + 18, '+' + money(sale + tip), 'brass');
+  sfx('ding');
+  setTimeout(() => {
+    tk.el.classList.add('out');
+    setTimeout(() => { tk.el.remove(); S.tickets = S.tickets.filter(x => x !== tk); }, 320);
+  }, 650);
+}
+function updateHeat(t) {
+  for (const tk of S.tickets) {
+    if (tk.complete) continue;
+    for (const l of tk.lines) {
+      if (!l.grade) continue;
+      const c = cooled(t - l.at);
+      l.el.classList.toggle('cooling', c > 0.12 && c <= 0.35);
+      l.el.classList.toggle('cold', c > 0.35);
+    }
+  }
+}
+
+/* ---------- actions ---------- */
+const ACC = { perfect: 1, good: 0.75, early: 0.3, late: 0.3, charred: 0 };
+const PTS = { perfect: 100, good: 60, early: 20, late: 20, charred: 0 };
+function registerAction(grade, it, t, label) {
+  S.actions++;
+  S.ema = S.ema * 0.92 + ACC[grade] * 0.08;
+  S.bucket.acc += ACC[grade]; S.bucket.n++;
+  S.score += PTS[grade];
+  const p = slotPage(it.slot);
+  if (grade === 'perfect' || grade === 'good') {
+    S.streak++; S.cleans++; S.maxStreak = Math.max(S.maxStreak, S.streak);
+    if (grade === 'perfect') {
+      S.perfects++;
+      const semi = SCALE[S.noteIdx % SCALE.length]; S.noteIdx++;
+      sfx('note', 220 * Math.pow(2, semi / 12), slotPan(it.slot));
+      puff(p.x, p.y, 10, 'ember', G.rad);
+      floatText(p.x, p.y - G.rad * 0.9, 'on point', 'brass');
+    } else {
+      sfx('tick', slotPan(it.slot));
+      floatText(p.x, p.y - G.rad * 0.9, 'good', 'good');
+    }
+  } else {
+    S.streak = 0; S.noteIdx = 0;
+    const word = label || (grade === 'charred' ? 'burnt' : grade === 'early' ? 'early' : 'late');
+    it.issue = word;
+    if (grade === 'early' || grade === 'late') S.issues[grade]++;
+    floatText(p.x, p.y - G.rad * 0.9, word, 'bad');
+  }
+  $('streakEl').textContent = S.streak;
+}
+function fire(type, btn) {
+  if (!S || !S.running || S.paused || !S.unlocked.has(type)) return;
+  if (S.lesson && S.lesson.type !== type) { coach(`Practice the ${TYPES[S.lesson.type].name.toLowerCase()} first`, 1800, true); return; }
+  if (!S.lesson && S.lessonQueue.length) { coach('A new item is next. Finish what’s on the grill', 2200, true); return; }
+  const t = now();
+  if (t < -S.beat * 0.6) return;
+  btn.classList.add('hit'); setTimeout(() => btn.classList.remove('hit'), 90);
+  const slot = S.slots.findIndex(s => !s);
+  if (slot < 0) { btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake'); sfx('nope'); return; }
+  const it = { id: S.nextId++, type, slot, side: 0, state: 'cook', temp: null, levels: [], grades: [],
+    rot: (Math.random() - 0.5) * 1.2, seed: Math.floor(Math.random() * 1e6), anim: { kind: 'place', t: performance.now() } };
+  setSide(it, placeStart(t));
+  if (type === 'patty') it.smashAt = it.start + S.beat;
+  if (S.lesson) it.practice = true;
+  S.items.push(it); S.slots[slot] = it;
+  sfx('place', slotPan(slot));
+  const p = slotPage(slot); puff(p.x, p.y, 8, 'steam', G.rad);
+}
+function isLastSide(it) { return it.side === sidesOfType(it.type) - 1; }
+const RANK = { perfect: 3, good: 2, early: 1, late: 1 };
+function worstGrade(grades) { return grades.reduce((a, g) => RANK[g] < RANK[a] ? g : a); }
+function marksFor(it) {
+  if (!it.levels.length) return 0;   // marks only show once a seared side has been turned up
+  const g = worstGrade(it.grades);
+  return g === 'perfect' ? 1 : g === 'good' ? 0.7 : 0.35;
+}
+// What shows on top: the average of the sides that have already been face down.
+function topLevel(it) { return it.levels.length ? it.levels.reduce((a, b) => a + b, 0) / it.levels.length : 0.05; }
+function tapItem(it, t) {
+  if (it.state === 'charred') { toss(it); return; }
+  const first = it.ticks ? it.ticks[0].at : it.target;
+  if (t < it.start + (first - it.start) * 0.5) { it.wiggle = performance.now(); sfx('nope'); return; }
+  let grade, temp = null;
+  if (it.ticks) {   // steak's second side: whichever temp tick you pulled closest to is the temp you served
+    const tick = it.ticks.reduce((a, b) => Math.abs(b.at - t) < Math.abs(a.at - t) ? b : a);
+    temp = tick.temp; grade = judge(t - tick.at - latency());
+  } else grade = judge(t - it.target - latency());
+  const verb = isLastSide(it) ? 'plated' : sidesOfType(it.type) > 2 ? 'turned' : 'flipped';
+  registerAction(grade, it, t, `${verb} ${grade}`);
+  it.levels.push(levelOf(it, t)); it.grades.push(grade);
+  if (!isLastSide(it)) {
+    it.side++;
+    if (it.type === 'steak') it.temp = S.lesson ? 'MED' : wantedTemp();
+    setSide(it, roundBeat(t));
+    it.anim = { kind: sidesOfType(it.type) > 2 ? 'turn' : 'flip', t: performance.now() };
+    sfx('flip', slotPan(it.slot));
+  } else {
+    plate(it, temp, t);
+  }
+}
+/* Burger smash: press on the beat after the patty lands, hold one beat, release on the next.
+   Both edges are judged; the worse one counts. Missing it entirely counts as a late action. */
+function smashOpen(it, t) {
+  return it.type === 'patty' && it.side === 0 && it.state === 'cook' && !it.smash && t <= it.smashAt + S.beat + windows().gw;
+}
+function startSmash(it, t) {
+  it.smashPress = judge(t - it.smashAt - latency());
+  it.smashing = t;
+  sfx('smash', slotPan(it.slot));
+}
+function endSmash(it, t) {
+  if (!it.smashing) return;
+  const rel = judge(t - (it.smashAt + S.beat) - latency());
+  const pressWorse = RANK[it.smashPress] <= RANK[rel];
+  const grade = pressWorse ? it.smashPress : rel;
+  // say which edge went wrong, in plain words
+  const label = pressWorse ? (it.smashPress === 'early' ? 'pressed early' : 'pressed late')
+                           : (rel === 'early' ? 'let go early' : 'held too long');
+  it.smashing = 0; it.smash = grade; it.smashedAt = performance.now();
+  it.grades.push(grade);
+  if (grade === 'early' || grade === 'late') S.issues.smash++;
+  registerAction(grade, it, t, label);
+  const p = slotPage(it.slot); puff(p.x, p.y, 10, 'steam', G.rad);
+}
+/* Chicken basting: any tap before it's ready is a baste, never an early flip. Bastes on the off-beat
+   build glaze, which raises the tip. Purely a bonus: ignoring it costs nothing. */
+const MAX_GLAZE = 6;
+function baste(it, t) {
+  const ph = (((t - latency()) / S.beat) % 1 + 1) % 1;
+  const clean = Math.abs(ph - 0.5) * S.beat <= windows().pw;
+  const p = slotPage(it.slot);
+  sfx('baste', clean, slotPan(it.slot));
+  it.basteAt = performance.now();
+  if (clean && (it.glaze || 0) < MAX_GLAZE) {
+    it.glaze = (it.glaze || 0) + 1;
+    puff(p.x, p.y, 4, 'ember', G.rad * 0.6);
+    if (it.glaze === MAX_GLAZE) floatText(p.x, p.y - G.rad * 0.9, 'glazed', 'brass');
+  }
+}
+function plate(it, temp, t) {
+  removeItem(it);
+  let grade = worstGrade(it.grades);
+  const from = slotPage(it.slot);
+  const marks = marksFor(it), topL = it.levels[0], rimL = it.levels[it.levels.length - 1];
+  if (S.lesson) {   // practice plates go to the pass for the chef to check, not onto tickets
+    fly(it.type, it.seed, G.rad, topL, rimL, marks, from, { x: from.x, y: -60 }, null);
+    let why = null;
+    const bad = it.grades.find(g => g !== 'perfect' && g !== 'good');
+    if (bad) why = it.issue || bad;
+    else if (it.type === 'steak' && temp !== 'MED') why = `that was ${temp.toLowerCase()}. Pull at the MED tick, 4 beats after the flip`;
+    else if (it.type === 'chicken' && (it.glaze || 0) < 2) why = 'it needs at least two clean bastes on the off-beat';
+    lessonResult(!why, why);
+    return;
+  }
+  S.plates++;
+  const open = l => !l.done && l.type === it.type;
+  const want = l => open(l) && (!temp || l.temp === temp);
+  let tk = S.tickets.find(k => !k.complete && k.lines.some(want));
+  let line = tk && tk.lines.find(want);
+  if (!tk && temp) {   // served at the wrong temp: it still goes on, but the table won't tip for it
+    tk = S.tickets.find(k => !k.complete && k.lines.some(open));
+    line = tk && tk.lines.find(open);
+    if (line) { grade = 'wrong'; S.issues.temp++; floatText(from.x, from.y + G.rad * 0.4, `${temp.toLowerCase()}, wanted ${line.temp.toLowerCase()}`, 'bad'); }
+  }
+  if (tk) {
+    line.done = true;   // claim now; the stamp lands when the plate arrives
+    line.glaze = it.glaze || 0;
+    const rc = line.el.getBoundingClientRect();
+    fly(it.type, it.seed, G.rad, topL, rimL, marks, from, { x: rc.left + rc.width / 2, y: rc.top + rc.height / 2 }, () => {
+      markLine(tk, line, grade, t); checkTicket(tk, now());
+    });
+  } else {
+    // nothing on the rail wants it: binned, and the food cost comes off the till
+    S.binned++;
+    const cost = foodCost(it.type);
+    S.waste += cost; updateTill();
+    floatText(from.x, from.y + G.rad * 0.4, 'no ticket −' + money(cost), 'bad');
+    sfx('toss');
+    fly(it.type, it.seed, G.rad, topL, rimL, marks, from, { x: from.x + 40, y: innerHeight + 80 }, null);
+  }
+}
+// wasted food costs what it cost to buy, about 35% of the menu price
+function foodCost(type) { return Math.round(TYPES[type].price * 35) / 100; }
+function toss(it) {
+  removeItem(it);
+  sfx('toss');
+  const p = slotPage(it.slot);
+  fly(it.type, it.seed, G.rad, 2, 2, 0, p, { x: p.x + 40, y: innerHeight + 80 }, null);
+}
+function removeItem(it) {
+  S.slots[it.slot] = null;
+  S.items = S.items.filter(x => x !== it);
+}
+
+/* ---------- input ---------- */
+// In swipe mode, plating is a flick up toward the rail. Timing is judged at touch-down, not at the end of the flick.
+let pendingSwipe = null, holding = null;
+grill.addEventListener('pointerdown', e => {
+  if (!S || !S.running || S.paused) return;
+  e.preventDefault();
+  const r = grill.getBoundingClientRect();
+  const i = slotAt(e.clientX - r.left, e.clientY - r.top);
+  if (i < 0 || !S.slots[i]) return;
+  const it = S.slots[i], t = now();
+  if (smashOpen(it, t)) {
+    holding = { it, id: e.pointerId };
+    try { grill.setPointerCapture(e.pointerId); } catch (err) {}
+    startSmash(it, t);
+    return;
+  }
+  if (it.type === 'chicken' && it.state === 'cook' && t < it.target - windows().gw) { baste(it, t); return; }
+  if (settings.swipe && isLastSide(it) && it.state === 'cook') {
+    pendingSwipe = { it, t, y: e.clientY, id: e.pointerId };
+    try { grill.setPointerCapture(e.pointerId); } catch (err) {}
+    return;
+  }
+  tapItem(it, t);
+});
+grill.addEventListener('pointermove', e => {
+  if (!pendingSwipe || e.pointerId !== pendingSwipe.id) return;
+  if (pendingSwipe.y - e.clientY > Math.max(22, G.rad * 0.3)) {
+    const { it, t } = pendingSwipe; pendingSwipe = null;
+    if (S.slots[it.slot] === it) tapItem(it, t);
+  }
+});
+function cancelSwipe(e) {
+  if (holding && e.pointerId === holding.id) {
+    const it = holding.it; holding = null;
+    if (S && S.running && S.slots[it.slot] === it) endSmash(it, now());
+    return;
+  }
+  if (!pendingSwipe || e.pointerId !== pendingSwipe.id) return;
+  const it = pendingSwipe.it; pendingSwipe = null;
+  if (S && S.slots[it.slot] === it) { it.wiggle = performance.now(); it.swipeHint = performance.now(); }
+}
+// a held finger on Windows touch or Android would otherwise open a context menu mid-service
+$('app').addEventListener('contextmenu', e => e.preventDefault());
+grill.addEventListener('pointerup', cancelSwipe);
+grill.addEventListener('pointercancel', cancelSwipe);
+addEventListener('keydown', e => {
+  if (e.key === 'Escape' || e.key === 'p') { if (S && S.running) togglePause(); return; }
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= 5) { const ty = ORDER[n - 1]; const b = $('bin-' + ty); if (b) fire(ty, b); }
+});
+
+/* ---------- bins ---------- */
+function buildBins() {
+  const nav = $('bins'); nav.innerHTML = '';
+  ORDER.forEach((type, i) => {
+    const T = TYPES[type];
+    const b = document.createElement('button');
+    b.className = 'bin'; b.id = 'bin-' + type; b.type = 'button';
+    b.setAttribute('aria-label', `Fire ${T.name}, ${T.beats} beats a side, ${sidesOfType(type)} sides`);
+    b.innerHTML = `<span class="key">${i + 1}</span><canvas width="96" height="96"></canvas><span class="nm">${T.name}</span><span class="pips">${'<i></i>'.repeat(T.beats)}${sidesOfType(type) > 2 ? `<b>×${sidesOfType(type)}</b>` : ''}</span><span class="badge" hidden></span>`;
+    const c = b.querySelector('canvas').getContext('2d');
+    c.translate(48, 48); c.rotate(-0.35); drawFood(c, type, 3, 44, 0.04, 0.1, 0);
+    b.addEventListener('pointerdown', e => { e.preventDefault(); fire(type, b); });
+    b.addEventListener('click', e => { if (e.detail === 0) fire(type, b); });
+    nav.appendChild(b);
+    T.btn = b; T.badgeEl = b.querySelector('.badge'); T.badgeVal = -1;
+  });
+}
+function updateBins() {
+  const need = {};
+  for (const k of ORDER) need[k] = 0;
+  for (const tk of S.tickets) if (!tk.complete) for (const l of tk.lines) if (!l.done) need[l.type]++;
+  for (const it of S.items) if (it.state === 'cook') need[it.type]--;
+  for (const k of ORDER) {
+    const T = TYPES[k], v = Math.max(0, need[k]);
+    T.btn.hidden = !S.unlocked.has(k);
+    const shown = settings.counts ? v : 0;
+    if (shown !== T.badgeVal) { T.badgeVal = shown; T.badgeEl.hidden = shown === 0; T.badgeEl.textContent = shown; }
+  }
+}
+
+/* ---------- toast ---------- */
+function toast(msg) {
+  const el = $('toast'); el.textContent = msg;
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+}
+
+/* ---------- item intros ---------- */
+// The bottom line on the grill: short reminders, practice progress and plain-language misses.
+let coachTimer = 0;
+function coach(text, ms, warn) {
+  const el = $('coach');
+  $('coachText').textContent = text;
+  el.classList.toggle('warn', !!warn);
+  $('coachSkip').hidden = !(S && S.lesson);
+  el.hidden = false;
+  clearTimeout(coachTimer);
+  if (ms) coachTimer = setTimeout(() => { el.hidden = true; }, ms);
+}
+function hideCoach() { clearTimeout(coachTimer); $('coach').hidden = true; }
+function holdClock() {
+  S.paused = true; S.pauseRaw = rawClock();
+  if (actx) { sizzleGain.gain.value = 0; actx.suspend(); }
+}
+function releaseClock() {
+  if (actx) actx.resume(); else S.t0 += rawClock() - S.pauseRaw;
+  S.paused = false;
+}
+function updateLesson(t) {
+  if (S.lesson || !S.lessonQueue.length || t < 0) return;
+  if (S.items.length || flights.length) {
+    if (!S.waitNoted) { S.waitNoted = true; coach('A new item is next. Finish what’s on the grill', 4000); }
+    return;
+  }
+  startLesson(S.lessonQueue.shift(), t);
+}
+function startLesson(type, t) {
+  const L = LESSONS[type];
+  S.lesson = { type, clean: 0, need: L.need, t0: t };
+  S.waitNoted = false;
+  $('lessonTitle').textContent = L.title;
+  $('lessonSteps').textContent = L.steps;
+  $('lessonTip').textContent = L.tip;
+  $('lessonNeed').textContent = L.need > 1 ? `Get it clean ${L.need} times in a row to carry on.` : 'Get one clean to carry on.';
+  const c = $('lessonIcon').getContext('2d');
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, 120, 120); c.translate(60, 60); c.rotate(-0.35);
+  drawFood(c, type, 3, 52, 0.04, 0.1, 0);
+  hideCoach();
+  holdClock();
+  $('lessonScreen').hidden = false;
+}
+function lessonTry() {
+  $('lessonScreen').hidden = true;
+  releaseClock();
+  TYPES[S.lesson.type].btn.classList.add('teach');
+  coach(`${LESSONS[S.lesson.type].hint} · clean 0/${S.lesson.need}`, 0);
+}
+function lessonResult(ok, why) {
+  const L = S.lesson; if (!L) return;
+  if (ok) {
+    L.clean++;
+    if (L.clean >= L.need) { finishLesson(false); return; }
+    coach(`Clean. ${L.need - L.clean} more · clean ${L.clean}/${L.need}`, 0);
+  } else {
+    L.clean = 0;
+    coach(`Not yet: ${why}. Try again · clean 0/${L.need}`, 0, true);
+  }
+}
+function finishLesson(skipped) {
+  const L = S.lesson; if (!L) return;
+  S.learned.add(L.type); saveLearned(S.learned);
+  // tickets on the rail didn't age while you practised
+  const dur = Math.max(0, now() - L.t0);
+  for (const tk of S.tickets) { tk.born += dur; for (const l of tk.lines) if (l.at != null) l.at += dur; }
+  S.lastSpawn += dur;
+  TYPES[L.type].btn.classList.remove('teach');
+  for (const it of [...S.items]) if (it.practice) {   // leftover practice food is cleared, free of charge
+    const p = slotPage(it.slot); puff(p.x, p.y, 6, 'steam', G.rad);
+    removeItem(it);
+  }
+  S.lesson = null;
+  $('lessonScreen').hidden = true;
+  if (S.paused) releaseClock();
+  coach(skipped ? LESSONS[L.type].hint : 'Got it. Back to service', 3000);
+}
+
+/* ---------- end-of-service note: one tip, picked from the biggest problem ---------- */
+function chefNote() {
+  const I = S.issues, n = (k, one, many) => `${I[k] === 1 ? one : many.replace('#', I[k])}`;
+  const notes = [
+    [I.smash >= 2, `${I.smash} smashes went wrong. Press on the very next beat after the patty lands, hold for one beat, then let go.`],
+    [I.temp >= 1, `${n('temp', 'A steak', '# steaks')} went out at the wrong temp. After the flip: rare is 2 beats, med 4, well 6.`],
+    [I.collide >= 3, `${I.collide} times, two things came up on the same beat. Fire the second one 2 beats later and their flips take turns instead of stacking.`],
+    [I.cold >= 2, `${I.cold} plates went cold waiting on their ticket. Fire the longest item first. A chicken is two burgers, and a burger is two shrimp.`],
+    [S.chars >= 2, `${S.chars} things burnt. When the grill gets busy, fire one item fewer and keep the ones you have on the beat.`],
+    [S.binned >= 2, `${S.binned} plates had no ticket. Check the rail before you fire.`],
+    [I.early > I.late * 2 && I.early >= 4, `You were often early. Wait for the crackle, then tap on the beat after it.`],
+    [I.late > I.early * 2 && I.late >= 4, `You were often late. The crackle comes one beat before ready, so tap on the next beat.`],
+    [I.chickens >= 2 && I.glazeless === I.chickens, `None of your chickens were basted. Tap them on the off-beat while they cook. A full glaze adds about a quarter to the tip.`],
+  ];
+  const hit = notes.find(([cond]) => cond);
+  if (hit) return hit[1];
+  return settings.rings ? 'Clean service. Try turning off cook rings: you cook by ear and tips go up 15%.'
+    : 'Clean service. Try the next heat up.';
+}
+
+/* ---------- update ---------- */
+function update(t, dt) {
+  // the service clock only runs while you're actually cooking service, not during an item intro
+  const step = clamp(t - S.lastT, 0, 0.25); S.lastT = t;
+  const teaching = !!S.lesson || S.lessonQueue.length > 0;
+  if (t >= 0 && !teaching) S.svc += step;
+  const tn = S.svc / S.len;
+  S.intensity = intensityAt(clamp(tn, 0, 1.2));
+
+  for (const k of ORDER) {
+    if (!S.unlocked.has(k) && tn >= UNLOCK[k]) {
+      S.unlocked.add(k);
+      if (t > 1) TYPES[k].btn.classList.add('new');
+      if (!S.learned.has(k)) { S.lessonQueue.push(k); S.lessonQueue.sort((a, b) => LESSON_ORDER.indexOf(a) - LESSON_ORDER.indexOf(b)); }
+      else S.hints.push(LESSONS[k].hint);
+    }
+  }
+  updateLesson(t);
+  // items you already know get a 5-second reminder line instead of a practice, one at a time
+  if (S.hints.length && !S.lesson && $('coach').hidden) coach(S.hints.shift(), 5000);
+
+  // tickets keep the rail just past what you can comfortably hold
+  if (t >= 0 && !S.closed && !teaching) {
+    if (tn >= 0.94) { S.closed = true; toast('Last call'); }
+    else {
+      const load = ticketLoad();
+      let skill = 0.55 + S.ema * 0.75;
+      const oldest = S.tickets.find(k => !k.complete);
+      if (oldest && t - oldest.born > oldest.expect * 1.6) skill *= 0.7;
+      const target = clamp(Math.round(1 + S.intensity * skill * 5.2), 1, 9);
+      if ((load < target && t - S.lastSpawn > S.m.gap * S.beat) || load === 0) spawnTicket(t, target - load);
+    }
+  }
+
+  for (const it of S.items) {
+    if (it.type === 'patty' && !it.smash && !it.smashing && it.side === 0 && it.state === 'cook' && t > it.smashAt + S.beat + windows().gw) {
+      it.smash = 'late'; it.grades.push('late'); S.issues.smash++;
+      registerAction('late', it, t, 'no smash');
+    }
+    if (it.state === 'cook' && t > it.charAt) {
+      it.state = 'charred'; S.chars++;
+      if (!S.lesson) {   // practice food is on the house
+        const cost = foodCost(it.type);
+        S.waste += cost; updateTill();
+        const p = slotPage(it.slot); floatText(p.x, p.y + G.rad * 0.4, '−' + money(cost), 'bad');
+      } else lessonResult(false, 'it burnt. Tap it to toss, then fire another');
+      registerAction('charred', it, t);
+      const p = slotPage(it.slot); puff(p.x, p.y, 14, 'dark', G.rad);
+    }
+  }
+
+  const tAge = S.lesson ? S.lesson.t0 : t;   // the rail stands still during practice
+  for (const tk of S.tickets) {
+    if (tk.complete) continue;
+    const k = (tAge - tk.born) / tk.expect;
+    tk.ageEl.style.width = Math.min(100, k * 100) + '%';
+    tk.el.classList.toggle('late-ticket', k > 1);
+  }
+
+  updateHeat(tAge);
+
+  if (S.svc >= S.nextTrace) {
+    S.trace.push({ t: S.nextTrace, acc: S.bucket.n ? S.bucket.acc / S.bucket.n : null, inten: S.intensity / S.m.cap });
+    S.bucket = { acc: 0, n: 0 }; S.nextTrace += 5;
+  }
+
+  if (sizzleGain) {
+    let heat = 0; for (const it of S.items) heat += it.state === 'charred' ? 1.6 : 1;
+    sizzleGain.gain.setTargetAtTime(Math.min(0.14, heat * 0.022) * (0.75 + Math.random() * 0.5), actx.currentTime, 0.05);
+  }
+
+  updateBins();
+  $('svcFill').style.width = clamp(tn, 0, 1) * 100 + '%';
+  $('svcClock').textContent = t < 0 ? 'Heat up' : teaching ? 'Practice' : S.closed ? 'Last call' : fmt(S.len - S.svc);
+
+  if ((tn >= 1 && S.tickets.length === 0 && S.items.length === 0) || tn >= 1.25) endGame();
+}
+
+/* ---------- render ---------- */
+let lastFrame = performance.now();
+function frame() {
+  requestAnimationFrame(frame);
+  const pnow = performance.now(), dt = Math.min(0.05, (pnow - lastFrame) / 1000); lastFrame = pnow;
+  let t = 0;
+  if (S && S.running) { t = now(); if (!S.paused) update(t, dt); }
+  renderGrill(t, dt, pnow);
+  renderFx(dt, pnow);
+}
+function beatPulse(t) {
+  if (!S) return 0;
+  const ph = ((t % S.beat) + S.beat) % S.beat / S.beat;
+  return Math.exp(-ph * 6);
+}
+function renderGrill(t, dt, pnow) {
+  const g = gctx, d = G.dpr;
+  g.setTransform(d, 0, 0, d, 0, 0);
+  g.clearRect(0, 0, G.w, G.h);
+  const bp = S && S.running ? beatPulse(t) : 0;
+  $('beatLight').style.opacity = (0.2 + bp * 0.8).toFixed(2);
+  const heat = S ? Math.min(1, S.streak / 14) : 0;
+  // ember bed under each slot, hotter as your run grows
+  G.slots.forEach((s, i) => {
+    const occ = S && S.slots[i];
+    const a = 0.1 + heat * 0.22 + (occ ? 0.08 : 0) + bp * 0.05;
+    const gr = g.createRadialGradient(s.x, s.y + G.rad * 0.2, 0, s.x, s.y, G.rad * 1.5);
+    gr.addColorStop(0, `rgba(255,${110 + heat * 40 | 0},40,${a})`); gr.addColorStop(1, 'rgba(255,90,30,0)');
+    g.fillStyle = gr; g.fillRect(s.x - G.rad * 1.6, s.y - G.rad * 1.6, G.rad * 3.2, G.rad * 3.2);
+  });
+  if (G.grates && G.grates.width > 0 && G.grates.height > 0) { g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(G.grates, 0, 0); g.setTransform(d, 0, 0, d, 0, 0); }
+  if (!S) return;
+  const { gw } = windows();
+  for (const it of S.items) {
+    const s = G.slots[it.slot]; if (!s) continue;
+    const r = G.rad;
+    let x = s.x, y = s.y, sx = 1, sy = 1, alpha = 1;
+    const lvl = levelOf(it, t);
+    let top = it.side === 0 ? 0.05 + Math.min(0.15, lvl * 0.12) : topLevel(it), rim = lvl;
+    let marks = marksFor(it);
+    if (it.state === 'charred') { top = Math.max(top, 1.6); rim = 2; }
+    if (it.anim) {
+      const dur = it.anim.kind === 'flip' ? 220 : it.anim.kind === 'turn' ? 160 : 260;
+      const k = (pnow - it.anim.t) / dur;
+      if (k >= 1) it.anim = null;
+      else if (it.anim.kind === 'place') { y -= (1 - k) * (1 - k) * r * 0.9; alpha = Math.min(1, k * 3); sx = sy = 1 + (1 - k) * 0.15; }
+      else {
+        y -= Math.sin(Math.PI * k) * r * (it.anim.kind === 'turn' ? 0.2 : 0.45);
+        sy = Math.abs(1 - 2 * k);
+        if (k < 0.5) {   // first half of the flip still shows the side that was on top
+          const prev = it.levels.slice(0, -1);
+          top = prev.length ? prev.reduce((a, b) => a + b, 0) / prev.length : 0.08;
+          rim = it.levels[it.levels.length - 1];
+          if (!prev.length) marks = 0;
+        }
+      }
+    }
+    if (it.wiggle && pnow - it.wiggle < 250) x += Math.sin((pnow - it.wiggle) / 18) * 3 * (1 - (pnow - it.wiggle) / 250);
+    const pulse = reduced ? 1 : 1 + bp * 0.025;
+    // shadow
+    g.fillStyle = 'rgba(0,0,0,0.35)';
+    g.beginPath(); g.ellipse(s.x + r * 0.06, s.y + r * 0.12, r * 0.85, r * 0.6, 0, 0, TAU); g.fill();
+    // a smashed patty spreads out: it widens while held and stays wide
+    const flat = it.type !== 'patty' ? 1 : it.smash && it.smash !== 'late' ? 1.13 : it.smashing ? 1 + 0.13 * clamp((t - it.smashing) / 0.12, 0, 1) : 1;
+    g.save(); g.globalAlpha = alpha; g.translate(x, y); g.scale(sx * pulse * flat, sy * pulse * flat); g.rotate(it.rot);
+    drawFood(g, it.type, it.seed, r, top, rim, marks);
+    if (it.glaze) {   // basted chicken picks up a glossy glaze
+      const sheen = it.basteAt && pnow - it.basteAt < 250 ? 0.12 : 0;
+      g.fillStyle = `rgba(255,214,140,${0.05 * it.glaze + sheen})`;
+      g.beginPath(); g.ellipse(-r * 0.1, -r * 0.18, r * 0.55, r * 0.32, -0.3, 0, TAU); g.fill();
+    }
+    g.restore();
+    // cook ring
+    if (it.state === 'cook') {
+      const p = clamp((t - it.start) / (it.target - it.start), 0, 1);
+      const dd = t - it.target;
+      const inWin = Math.abs(dd) <= gw;
+      const showRing = settings.rings || (!it.ticks && it.target - t < S.beat);
+      if (it.ticks && settings.rings && t > it.start) {
+        // steak gauge: the ring runs to WELL, with a tick for each temp; the one the rail wants is lit
+        const end = it.ticks[2].at, q = clamp((t - it.start) / (end - it.start), 0, 1);
+        const late = t - end > gw;
+        g.lineCap = 'round'; g.lineWidth = Math.max(2.5, r * 0.06);
+        g.beginPath(); g.arc(s.x, s.y, r * 1.02, -Math.PI / 2, -Math.PI / 2 + TAU * q);
+        g.strokeStyle = late ? 'rgba(255,93,75,0.9)' : inWin ? 'rgba(255,236,190,0.95)' : 'rgba(229,174,79,0.55)';
+        if (inWin) { g.shadowColor = 'rgba(255,200,120,0.9)'; g.shadowBlur = 14; }
+        g.stroke(); g.shadowBlur = 0;
+        g.font = `600 ${Math.max(10, r * 0.17)}px 'IBM Plex Mono', monospace`; g.textAlign = 'center'; g.textBaseline = 'middle';
+        for (const tk of it.ticks) {
+          const a = -Math.PI / 2 + TAU * ((tk.at - it.start) / (end - it.start));
+          const lit = tk.temp === it.temp, cx = s.x + Math.cos(a) * r * 1.02, cy = s.y + Math.sin(a) * r * 1.02;
+          g.beginPath(); g.arc(cx, cy, lit ? 5 : 3.5, 0, TAU);
+          g.fillStyle = lit ? 'rgba(255,236,190,1)' : 'rgba(143,149,157,0.9)'; g.fill();
+          g.fillStyle = lit ? 'rgba(255,236,190,0.95)' : 'rgba(143,149,157,0.8)';
+          g.fillText(tk.temp[0], s.x + Math.cos(a) * r * 1.25, s.y + Math.sin(a) * r * 1.25);
+        }
+        g.textBaseline = 'alphabetic';
+      } else if (!it.ticks && showRing && p > 0) {
+        g.lineCap = 'round';
+        g.beginPath(); g.arc(s.x, s.y, r * 1.02, -Math.PI / 2, -Math.PI / 2 + TAU * p);
+        g.lineWidth = Math.max(2.5, r * 0.06);
+        g.strokeStyle = dd > gw ? 'rgba(255,93,75,0.9)' : inWin ? 'rgba(255,236,190,0.95)' : `rgba(229,174,79,${settings.rings ? 0.55 : 0.35})`;
+        if (inWin) { g.shadowColor = 'rgba(255,200,120,0.9)'; g.shadowBlur = 14; }
+        g.stroke(); g.shadowBlur = 0;
+      }
+      if (sidesOfType(it.type) > 2) {   // one dot per side: done, cooking now, still to come
+        const n = sidesOfType(it.type), gap = r * 0.2, y0 = s.y + r * 0.78;
+        for (let i = 0; i < n; i++) {
+          g.beginPath(); g.arc(s.x + (i - (n - 1) / 2) * gap, y0, 3, 0, TAU);
+          g.fillStyle = i < it.side ? 'rgba(229,174,79,0.95)' : i === it.side ? `rgba(255,236,190,${0.4 + bp * 0.5})` : 'rgba(143,149,157,0.45)';
+          g.fill();
+        }
+      }
+      if (it.type === 'patty' && !it.smash) {
+        g.textAlign = 'center'; g.font = `800 ${Math.max(13, r * 0.24)}px 'Barlow Condensed', 'Arial Narrow', sans-serif`;
+        if (it.smashing) {   // hold bar: fills over the held beat, release when it closes
+          const q = clamp((t - it.smashAt) / S.beat, 0, 1);
+          g.lineCap = 'round'; g.lineWidth = Math.max(5, r * 0.12); g.strokeStyle = 'rgba(255,236,190,0.95)';
+          g.beginPath(); g.arc(s.x, s.y, r * 0.55, -Math.PI / 2, -Math.PI / 2 + TAU * Math.max(0.001, q)); g.stroke();
+          g.fillStyle = 'rgba(255,236,190,0.95)'; g.fillText('HOLD', s.x, s.y - r * 1.18);
+        } else if (settings.rings) {   // approach circle that lands on the smash beat
+          const k = (it.smashAt - t) / S.beat;
+          if (k > -0.4) {
+            g.lineWidth = 2.5; g.strokeStyle = `rgba(255,236,190,${k < 0 ? 0.9 : 0.35 + 0.5 * (1 - clamp(k, 0, 1))})`;
+            g.beginPath(); g.arc(s.x, s.y, r * (0.82 + 0.7 * clamp(k, 0, 1.4)), 0, TAU); g.stroke();
+            g.fillStyle = 'rgba(255,236,190,0.9)'; g.fillText('SMASH', s.x, s.y - r * 1.18);
+          }
+        }
+      }
+      if (it.type === 'chicken' && t < it.target - gw && settings.rings) {   // off-beat pulse: when a baste lands clean
+        const ph = ((t / S.beat) % 1 + 1) % 1, off = Math.exp(-Math.abs(ph - 0.5) * 9);
+        g.beginPath(); g.arc(s.x + r * 0.95, s.y - r * 0.95, 3 + off * 4, 0, TAU);
+        g.fillStyle = `rgba(229,174,79,${0.25 + off * 0.7})`; g.fill();
+        if (it.glaze) { g.fillStyle = 'rgba(229,174,79,0.8)'; g.font = `600 ${Math.max(10, r * 0.16)}px 'IBM Plex Mono', monospace`; g.textAlign = 'center'; g.fillText('✦'.repeat(Math.min(it.glaze, MAX_GLAZE)), s.x, s.y + r * 1.2); }
+      }
+      const hinted = it.swipeHint && pnow - it.swipeHint < 900;
+      if (settings.swipe && isLastSide(it) && (dd > -S.beat || hinted)) {
+        const a = hinted ? 0.9 : 0.35 + bp * 0.4, cy = s.y - r * 1.2, w = r * 0.22;
+        g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = 3; g.strokeStyle = `rgba(229,174,79,${a})`;
+        for (const off of [0, w * 0.7]) { g.beginPath(); g.moveTo(s.x - w, cy + off + w * 0.5); g.lineTo(s.x, cy + off - w * 0.2); g.lineTo(s.x + w, cy + off + w * 0.5); g.stroke(); }
+      }
+      if (dd >= 0 && dd < 0.3 && !(it.ticks && !settings.rings)) {
+        const k = dd / 0.3;
+        g.beginPath(); g.arc(s.x, s.y, r * (1.02 + k * 0.3), 0, TAU);
+        g.lineWidth = 2; g.strokeStyle = `rgba(255,236,190,${0.6 * (1 - k)})`; g.stroke();
+      }
+    } else {
+      g.fillStyle = 'rgba(235,229,216,0.75)'; g.font = `600 ${Math.max(11, r * 0.2)}px 'IBM Plex Mono', monospace`;
+      g.textAlign = 'center'; g.fillText('tap to toss', s.x, s.y + r * 1.15);
+    }
+    // smoke as it nears done, heavy when burning
+    if (!S.paused && !reduced) {
+      const rate = it.state === 'charred' ? 16 : lvl > 1.25 ? 9 : lvl > 0.75 ? 3 : 0.7;
+      if (Math.random() < rate * dt) {
+        const p = slotPage(it.slot);
+        parts.push({ kind: it.state === 'charred' || lvl > 1.4 ? 'dark' : 'smoke', x: p.x + (Math.random() - 0.5) * r, y: p.y - Math.random() * r * 0.3,
+          vx: (Math.random() - 0.5) * 12, vy: -22 - Math.random() * 28, life: 0, max: 1.3 + Math.random(), size: r * (0.18 + Math.random() * 0.12) });
+      }
+    }
+  }
+}
+const FLOATC = { brass: '229,174,79', good: '147,214,154', bad: '255,93,75' };
+function renderFx(dt, pnow) {
+  const g = fctx, d = G.dpr;
+  g.setTransform(d, 0, 0, d, 0, 0);
+  g.clearRect(0, 0, innerWidth, innerHeight);
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    p.life += dt;
+    if (p.life >= p.max) { parts.splice(i, 1); continue; }
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    const k = p.life / p.max;
+    if (p.kind === 'ember') {
+      p.vy += 60 * dt;
+      g.fillStyle = `rgba(255,${150 + (1 - k) * 80 | 0},60,${1 - k})`;
+      g.beginPath(); g.arc(p.x, p.y, 1.6 + (1 - k) * 1.4, 0, TAU); g.fill();
+    } else {
+      p.vx *= 0.99;
+      const sz = p.size * (1 + k * 2.2);
+      const a = (p.kind === 'dark' ? 0.32 : p.kind === 'steam' ? 0.22 : 0.13) * Math.sin(Math.PI * k);
+      const c = p.kind === 'dark' ? '40,36,34' : '214,212,208';
+      const gr = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, sz);
+      gr.addColorStop(0, `rgba(${c},${a})`); gr.addColorStop(1, `rgba(${c},0)`);
+      g.fillStyle = gr; g.beginPath(); g.arc(p.x, p.y, sz, 0, TAU); g.fill();
+    }
+  }
+  for (let i = flights.length - 1; i >= 0; i--) {
+    const f = flights[i];
+    const k = clamp((pnow - f.t) / f.dur, 0, 1), e = 1 - Math.pow(1 - k, 3);
+    const cx = (f.from.x + f.to.x) / 2, cy = Math.min(f.from.y, f.to.y) - 60;
+    const x = (1 - e) * (1 - e) * f.from.x + 2 * (1 - e) * e * cx + e * e * f.to.x;
+    const y = (1 - e) * (1 - e) * f.from.y + 2 * (1 - e) * e * cy + e * e * f.to.y;
+    g.save(); g.translate(x, y); g.rotate(f.rot + e * 2); const sc = 1 - e * 0.65; g.scale(sc, sc);
+    g.globalAlpha = k > 0.85 ? (1 - k) / 0.15 : 1;
+    drawFood(g, f.type, f.seed, f.r, f.topL, f.rimL, f.marks);
+    g.restore();
+    if (k >= 1) { flights.splice(i, 1); if (f.onDone) f.onDone(); }
+  }
+  g.textAlign = 'center';
+  for (let i = floats.length - 1; i >= 0; i--) {
+    const f = floats[i], k = (pnow - f.t) / 700;
+    if (k >= 1) { floats.splice(i, 1); continue; }
+    g.font = `800 ${17}px 'Barlow Condensed', 'Arial Narrow', sans-serif`;
+    g.fillStyle = `rgba(${FLOATC[f.color]},${1 - k * k})`;
+    g.fillText(f.text.toUpperCase(), f.x, f.y - k * 26);
+  }
+}
+
+/* ---------- flow ---------- */
+function startGame() {
+  initAudio();
+  if (actx && actx.state === 'suspended') actx.resume();
+  newGame();
+  S.t0 = rawClock() + 4 * S.beat + 0.15;
+  ticketsEl.innerHTML = '<div class="empty-rail">Tickets print here.</div>';
+  $('tillEl').textContent = money(0); $('streakEl').textContent = '0';
+  parts.length = 0; flights.length = 0; floats.length = 0;
+  for (const k of ORDER) { TYPES[k].badgeVal = -1; TYPES[k].btn.classList.remove('new', 'teach'); }
+  hideCoach(); $('lessonScreen').hidden = true;
+  $('startScreen').hidden = true; $('endScreen').hidden = true; $('pauseScreen').hidden = true;
+  toast('Heat’s on');
+  requestWakeLock();
+}
+function togglePause() {
+  if (!S || !S.running || !$('lessonScreen').hidden) return;
+  if (!S.paused) {
+    S.paused = true; S.pauseRaw = rawClock();
+    if (actx) { sizzleGain.gain.value = 0; actx.suspend(); }
+    $('pauseScreen').hidden = false;
+  } else {
+    if (actx) actx.resume(); else S.t0 += rawClock() - S.pauseRaw;
+    S.paused = false;
+    $('pauseScreen').hidden = true;
+  }
+}
+function endGame() {
+  if (!S || !S.running) return;
+  S.running = false;
+  if (S.paused) { S.paused = false; if (actx) actx.resume(); }
+  hideCoach(); $('lessonScreen').hidden = true;
+  for (const k of ORDER) TYPES[k].btn.classList.remove('teach');
+  $('chefNote').textContent = chefNote();
+  if (sizzleGain) sizzleGain.gain.setTargetAtTime(0, actx.currentTime, 0.2);
+  if (S.bucket.n) S.trace.push({ t: S.nextTrace, acc: S.bucket.acc / S.bucket.n, inten: S.intensity / S.m.cap });
+  const judged = S.trace.filter(b => b.acc !== null);
+  const pocket = judged.length ? judged.filter(b => b.acc >= 0.75).length / judged.length : 0;
+  const pocketSecs = judged.filter(b => b.acc >= 0.75).length * 5;
+  const avgT = S.ticketTimes.length ? S.ticketTimes.reduce((a, b) => a + b, 0) / S.ticketTimes.length : 0;
+  $('pocketLine').innerHTML = `<b>${Math.round(pocket * 100)}%</b> of the service in the pocket, about ${fmt(pocketSecs)} where your timing held clean.`;
+  const take = Math.round((S.sales + S.tips - S.waste) * 100) / 100;
+  const best = loadBest(), prev = best[settings.mode] || 0, isBest = take > prev && S.covers > 0;
+  if (isBest) { best[settings.mode] = take; saveBest(best); renderBest(); }
+  const avgPct = S.tipPcts.length ? S.tipPcts.reduce((a, b) => a + b, 0) / S.tipPcts.length : 0;
+  $('takeAmt').textContent = money(take);
+  $('takeParts').textContent = `Sales ${money(S.sales)} · Tips ${money(S.tips)} · Waste −${money(S.waste)}`;
+  $('takeBest').textContent = isBest ? `New best for ${MODE_NAMES[settings.mode]}` : prev ? `Best for ${MODE_NAMES[settings.mode]}: ${money(prev)}` : '';
+  $('takeBest').classList.toggle('new-best', isBest);
+  const stats = [
+    ['Tickets out', S.covers],
+    ['Avg tip', S.tipPcts.length ? Math.round(avgPct * 100) + '%' : '–'],
+    ['On point', S.actions ? Math.round(S.perfects / S.actions * 100) + '%' : '–'],
+    ['Best run', S.maxStreak],
+    ['Avg ticket', avgT ? fmt(avgT) : '–'],
+    ['Wasted', S.chars + S.binned],
+  ];
+  $('endStats').innerHTML = stats.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+  $('pauseScreen').hidden = true;
+  $('endScreen').hidden = false;
+  requestAnimationFrame(drawTrace);
+  releaseWakeLock();
+}
+function drawTrace() {
+  const c = $('trace'), r = c.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
+  c.width = r.width * d; c.height = r.height * d;
+  const g = c.getContext('2d'); g.scale(d, d);
+  const css = getComputedStyle(document.documentElement);
+  const W = r.width, H = r.height, padB = 16, padT = 6;
+  const tmax = Math.max(S.len, ...S.trace.map(b => b.t));
+  const X = t => (t / tmax) * W, Y = v => padT + (1 - clamp(v, 0, 1.15) / 1.15) * (H - padB - padT);
+  g.strokeStyle = css.getPropertyValue('--iron-3'); g.lineWidth = 1;
+  for (const v of [0.25, 0.5, 0.75, 1]) { g.beginPath(); g.moveTo(0, Y(v)); g.lineTo(W, Y(v)); g.stroke(); }
+  // timing area
+  const acc = S.trace.filter(b => b.acc !== null);
+  if (acc.length > 1) {
+    g.beginPath(); g.moveTo(X(acc[0].t), Y(0));
+    for (const b of acc) g.lineTo(X(b.t), Y(b.acc));
+    g.lineTo(X(acc[acc.length - 1].t), Y(0)); g.closePath();
+    g.fillStyle = 'rgba(147,214,154,0.18)'; g.fill();
+    g.beginPath(); acc.forEach((b, i) => i ? g.lineTo(X(b.t), Y(b.acc)) : g.moveTo(X(b.t), Y(b.acc)));
+    g.strokeStyle = css.getPropertyValue('--good'); g.lineWidth = 2; g.stroke();
+  }
+  // pressure line
+  g.beginPath(); S.trace.forEach((b, i) => i ? g.lineTo(X(b.t), Y(b.inten)) : g.moveTo(X(b.t), Y(b.inten)));
+  g.strokeStyle = css.getPropertyValue('--ember'); g.lineWidth = 2; g.stroke();
+  g.fillStyle = css.getPropertyValue('--muted'); g.font = '10px ' + css.getPropertyValue('--f-mono');
+  g.textAlign = 'left'; g.fillText('0:00', 0, H - 3);
+  g.textAlign = 'right'; g.fillText(fmt(tmax), W, H - 3);
+}
+
+let wakeLock = null;
+async function requestWakeLock() { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {} }
+function releaseWakeLock() { try { wakeLock && wakeLock.release(); } catch (e) {} wakeLock = null; }
+
+document.addEventListener('visibilitychange', () => { if (document.hidden && S && S.running && !S.paused) togglePause(); });
+
+/* ---------- wiring ---------- */
+$('mode-' + settings.mode).checked = true;
+renderBest();
+$('ringsToggle').checked = settings.rings;
+$('countsToggle').checked = settings.counts;
+$('swipeToggle').checked = settings.swipe;
+$('countsToggle').addEventListener('change', e => { settings.counts = e.target.checked; saveSettings(); });
+$('swipeToggle').addEventListener('change', e => { settings.swipe = e.target.checked; saveSettings(); });
+document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', () => { settings.mode = r.value; saveSettings(); }));
+$('ringsToggle').addEventListener('change', e => { settings.rings = e.target.checked; saveSettings(); });
+$('startBtn').addEventListener('click', startGame);
+$('againBtn').addEventListener('click', startGame);
+$('menuBtn').addEventListener('click', () => { $('endScreen').hidden = true; $('startScreen').hidden = false; });
+$('pauseBtn').addEventListener('click', togglePause);
+$('lessonGo').addEventListener('click', lessonTry);
+$('lessonSkip').addEventListener('click', () => finishLesson(true));
+$('coachSkip').addEventListener('click', () => finishLesson(true));
+$('replayIntros').addEventListener('click', e => {
+  saveLearned(new Set());
+  e.target.textContent = 'Intros will play next service';
+});
+$('resumeBtn').addEventListener('click', togglePause);
+$('quitBtn').addEventListener('click', endGame);
+$('muteBtn').addEventListener('click', () => {
+  muted = !muted;
+  if (master) master.gain.value = muted ? 0 : 0.9;
+  $('muteBtn').textContent = muted ? 'Muted' : 'Sound';
+});
+
+buildBins();
+layout();
+requestAnimationFrame(frame);
+})();
+</script>
